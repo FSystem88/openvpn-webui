@@ -1,4 +1,3 @@
-#
 import asyncio
 import base64
 import hashlib
@@ -11,7 +10,6 @@ import secrets
 import shutil
 import socket
 import sqlite3
-
 import subprocess
 import tarfile
 import tempfile
@@ -1226,7 +1224,7 @@ MAIN_HTML = """
 		<div class="brand">
 			<div class="brand-text">
 				<h1 data-i18n="app_title">OpenVPN Dashboard</h1>
-				<p data-i18n="app_subtitle">Control Center</p>
+				<p data-i18n="app_subtitle">Control Center by <a href="https://github.com/FSystem88" style=" color: var(--text-muted); ">FSystem88</a></p>
 			</div>
 		</div>
 		<div class="header-actions">
