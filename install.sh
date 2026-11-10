@@ -5,8 +5,8 @@ set -e
 # Проверка прав суперпользователя и рабочей директории
 # ============================================================
 if [[ "$EUID" -ne 0 ]]; then
-    echo "[-] Ошибка: Этот скрипт должен быть запущен с правами root (sudo)."
-    exit 1
+	echo "[-] Ошибка: Этот скрипт должен быть запущен с правами root (sudo)."
+	exit 1
 fi
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,8 +19,8 @@ DB_PATH="/etc/openvpn/panel.db"
 
 # Создание безопасного scrypt-хэша с солью
 hash_password() {
-    local raw_pass="$1"
-    ADMIN_RAW_PASS="$raw_pass" python3 -c '
+	local raw_pass="$1"
+	ADMIN_RAW_PASS="$raw_pass" python3 -c '
 import os, hashlib, secrets
 pwd = os.environ.get("ADMIN_RAW_PASS", "")
 salt = secrets.token_bytes(16)
@@ -31,10 +31,10 @@ print(f"scrypt${salt.hex()}${derived.hex()}")
 
 # Принудительная запись логина/хэша в SQLite базу
 sync_db_credentials() {
-    local login="$1"
-    local hash="$2"
-    if [[ -f "$DB_PATH" ]]; then
-        ADMIN_LOGIN_ARG="$login" ADMIN_HASH_ARG="$hash" python3 -c '
+	local login="$1"
+	local hash="$2"
+	if [[ -f "$DB_PATH" ]]; then
+		ADMIN_LOGIN_ARG="$login" ADMIN_HASH_ARG="$hash" python3 -c '
 import os, sqlite3
 conn = sqlite3.connect("/etc/openvpn/panel.db")
 cur = conn.cursor()
@@ -44,33 +44,36 @@ cur.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO
 conn.commit()
 conn.close()
 '
-    fi
+	fi
 }
 
 # Создание обязательного резервного архива
 create_backup() {
-    local date_str
-    date_str=$(date +%Y-%m-%d_%H-%M-%S)
-    local backup_file="/root/openvpn_backup_${date_str}.tar.gz"
-    echo ""
-    echo "[*] Создание резервной копии перед операцией..."
-    
-    local temp_backup_dir
-    temp_backup_dir=$(mktemp -d)
+	local date_str
+	date_str=$(date +%Y-%m-%d_%H-%M-%S)
+	local backup_file="/root/openvpn_backup_${date_str}.tar.gz"
+	echo ""
+	echo "[*] Создание резервной копии перед операцией..."
+	
+	local temp_backup_dir
+	temp_backup_dir=$(mktemp -d)
+	local target_dir="$temp_backup_dir/backup_data"
+	mkdir -p "$target_dir"
 
-    [[ -d "/etc/openvpn" ]] && cp -r /etc/openvpn "$temp_backup_dir/openvpn"
-    [[ -d "/etc/wireguard" ]] && cp -r /etc/wireguard "$temp_backup_dir/wireguard"
-    [[ -d "/etc/dnsmasq.d" ]] && cp -r /etc/dnsmasq.d "$temp_backup_dir/dnsmasq.d"
-    [[ -f "$REPO_DIR/.env" ]] && cp "$REPO_DIR/.env" "$temp_backup_dir/.env"
-    [[ -f "$DB_PATH" ]] && cp "$DB_PATH" "$temp_backup_dir/panel.db"
+	[[ -d "/etc/openvpn" ]] && cp -r /etc/openvpn "$target_dir/openvpn"
+	[[ -d "/etc/wireguard" ]] && cp -r /etc/wireguard "$target_dir/wireguard"
+	[[ -d "/etc/dnsmasq.d" ]] && cp -r /etc/dnsmasq.d "$target_dir/dnsmasq.d"
+	[[ -f "$REPO_DIR/.env" ]] && cp "$REPO_DIR/.env" "$target_dir/.env"
+	[[ -f "$DB_PATH" ]] && cp "$DB_PATH" "$target_dir/panel.db"
 
-    tar -czf "$backup_file" -C "$temp_backup_dir" .
-    rm -rf "$temp_backup_dir"
+	# Архивация с единой структурой backup_data/
+	tar -czf "$backup_file" -C "$temp_backup_dir" backup_data
+	rm -rf "$temp_backup_dir"
 
-    chmod 600 "$backup_file"
-    echo "[+] Резервная копия успешно сохранена:"
-    echo "    -> $backup_file"
-    echo ""
+	chmod 600 "$backup_file"
+	echo "[+] Резервная копия успешно сохранена:"
+	echo "    -> $backup_file"
+	echo ""
 }
 
 # ============================================================
@@ -78,59 +81,59 @@ create_backup() {
 # ============================================================
 
 uninstall_panel_only() {
-    create_backup
+	create_backup
 
-    echo "[*] Остановка и удаление службы веб-панели..."
-    systemctl stop openvpn-webui.service 2>/dev/null || true
-    systemctl disable openvpn-webui.service 2>/dev/null || true
-    rm -f /etc/systemd/system/openvpn-webui.service
-    systemctl daemon-reload
+	echo "[*] Остановка и удаление службы веб-панели..."
+	systemctl stop openvpn-webui.service 2>/dev/null || true
+	systemctl disable openvpn-webui.service 2>/dev/null || true
+	rm -f /etc/systemd/system/openvpn-webui.service
+	systemctl daemon-reload
 
-    echo "[*] Очистка окружения веб-панели..."
-    rm -rf "$REPO_DIR/venv" "$REPO_DIR/.env" "$DB_PATH"
+	echo "[*] Очистка окружения веб-панели..."
+	rm -rf "$REPO_DIR/venv" "$REPO_DIR/.env" "$DB_PATH"
 
-    # Удаление правил iptables блокировки торрентов и редиректа DNS
-    iptables -t nat -D PREROUTING -i tun0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
-    iptables -t nat -D PREROUTING -i tun0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+	# Удаление правил iptables блокировки торрентов и редиректа DNS
+	iptables -t nat -D PREROUTING -i tun0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+	iptables -t nat -D PREROUTING -i tun0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
 
-    echo "=================================================="
-    echo "  Веб-панель успешно удалена!                    "
-    echo "  OpenVPN сервер продолжает работать штатно.     "
-    echo "=================================================="
+	echo "=================================================="
+	echo "  Веб-панель успешно удалена!                    "
+	echo "  OpenVPN сервер продолжает работать штатно.     "
+	echo "=================================================="
 }
 
 uninstall_full() {
-    create_backup
+	create_backup
 
-    echo "[*] Остановка всех служб..."
-    systemctl stop openvpn-webui.service 2>/dev/null || true
-    systemctl disable openvpn-webui.service 2>/dev/null || true
-    rm -f /etc/systemd/system/openvpn-webui.service
+	echo "[*] Остановка всех служб..."
+	systemctl stop openvpn-webui.service 2>/dev/null || true
+	systemctl disable openvpn-webui.service 2>/dev/null || true
+	rm -f /etc/systemd/system/openvpn-webui.service
 
-    systemctl stop openvpn-server@server 2>/dev/null || true
-    systemctl disable openvpn-server@server 2>/dev/null || true
+	systemctl stop openvpn-server@server 2>/dev/null || true
+	systemctl disable openvpn-server@server 2>/dev/null || true
 
-    systemctl stop wg-quick@wg0 2>/dev/null || true
-    systemctl disable wg-quick@wg0 2>/dev/null || true
+	systemctl stop wg-quick@wg0 2>/dev/null || true
+	systemctl disable wg-quick@wg0 2>/dev/null || true
 
-    systemctl daemon-reload
+	systemctl daemon-reload
 
-    echo "[*] Удаление конфигураций и баз данных..."
-    rm -rf /etc/openvpn
-    rm -rf /etc/wireguard
-    rm -f /etc/dnsmasq.d/00-ovpn-base.conf
-    rm -f /etc/dnsmasq.d/99-ovpn-adblock.conf
-    rm -rf /var/run/openvpn-server
-    rm -rf "$REPO_DIR/venv" "$REPO_DIR/.env" "$DB_PATH"
+	echo "[*] Удаление конфигураций и баз данных..."
+	rm -rf /etc/openvpn
+	rm -rf /etc/wireguard
+	rm -f /etc/dnsmasq.d/00-ovpn-base.conf
+	rm -f /etc/dnsmasq.d/99-ovpn-adblock.conf
+	rm -rf /var/run/openvpn-server
+	rm -rf "$REPO_DIR/venv" "$REPO_DIR/.env" "$DB_PATH"
 
-    echo "[*] Очистка правил iptables..."
-    iptables -t nat -D PREROUTING -i tun0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
-    iptables -t nat -D PREROUTING -i tun0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+	echo "[*] Очистка правил iptables..."
+	iptables -t nat -D PREROUTING -i tun0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
+	iptables -t nat -D PREROUTING -i tun0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
 
-    echo "=================================================="
-    echo "  Полное удаление завершено!                      "
-    echo "  OpenVPN, WireGuard-сплит и веб-панель удалены. "
-    echo "=================================================="
+	echo "=================================================="
+	echo "  Полное удаление завершено!                      "
+	echo "  OpenVPN, WireGuard-сплит и веб-панель удалены. "
+	echo "=================================================="
 }
 
 # ============================================================
@@ -138,35 +141,35 @@ uninstall_full() {
 # ============================================================
 
 reset_password_menu() {
-    echo ""
-    echo "--- Сброс учетных данных администратора ---"
-    read -rp "Новый логин [admin]: " NEW_LOGIN
-    NEW_LOGIN=${NEW_LOGIN:-admin}
+	echo ""
+	echo "--- Сброс учетных данных администратора ---"
+	read -rp "Новый логин [admin]: " NEW_LOGIN
+	NEW_LOGIN=${NEW_LOGIN:-admin}
 
-    read -rp "Новый пароль [Enter для автогенерации]: " NEW_PASS
-    if [[ -z "$NEW_PASS" ]]; then
-        NEW_PASS=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
-    fi
+	read -rp "Новый пароль [Enter для автогенерации]: " NEW_PASS
+	if [[ -z "$NEW_PASS" ]]; then
+		NEW_PASS=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
+	fi
 
-    local new_hash
-    new_hash=$(hash_password "$NEW_PASS")
+	local new_hash
+	new_hash=$(hash_password "$NEW_PASS")
 
-    # Обновление в .env
-    if [[ -f "$REPO_DIR/.env" ]]; then
-        sed -i "s|^ADMIN_LOGIN=.*|ADMIN_LOGIN=$NEW_LOGIN|" "$REPO_DIR/.env"
-        sed -i "s|^ADMIN_PASSWORD_HASH=.*|ADMIN_PASSWORD_HASH=$new_hash|" "$REPO_DIR/.env"
-    fi
+	# Обновление в .env
+	if [[ -f "$REPO_DIR/.env" ]]; then
+		sed -i "s|^ADMIN_LOGIN=.*|ADMIN_LOGIN=$NEW_LOGIN|" "$REPO_DIR/.env"
+		sed -i "s|^ADMIN_PASSWORD_HASH=.*|ADMIN_PASSWORD_HASH=$new_hash|" "$REPO_DIR/.env"
+	fi
 
-    # Обновление напрямую в SQLite
-    sync_db_credentials "$NEW_LOGIN" "$new_hash"
+	# Обновление напрямую в SQLite
+	sync_db_credentials "$NEW_LOGIN" "$new_hash"
 
-    systemctl restart openvpn-webui.service 2>/dev/null || true
+	systemctl restart openvpn-webui.service 2>/dev/null || true
 
-    echo ""
-    echo "[+] Учетные данные успешно обновлены!"
-    echo "    Логин:  $NEW_LOGIN"
-    echo "    Пароль: $NEW_PASS"
-    exit 0
+	echo ""
+	echo "[+] Учетные данные успешно обновлены!"
+	echo "    Логин:  $NEW_LOGIN"
+	echo "    Пароль: $NEW_PASS"
+	exit 0
 }
 
 # ============================================================
@@ -178,23 +181,23 @@ echo "    Управление OpenVPN & Web UI                  "
 echo "=================================================="
 
 if [[ -f "$SERVER_CONF" || -f "/etc/systemd/system/openvpn-webui.service" ]]; then
-    echo "Обнаружены установленные компоненты."
-    echo "1) Установить / Обновить Web UI"
-    echo "2) Сбросить пароль администратора Web UI"
-    echo "3) Создать резервную копию (Backup)"
-    echo "4) Удалить только Web-панель (оставить OpenVPN)"
-    echo "5) Полное удаление (OpenVPN + Web-панель)"
-    echo "6) Выход"
-    read -rp "Выберите действие [1-6]: " MENU_CHOICE
+	echo "Обнаружены установленные компоненты."
+	echo "1) Установить / Обновить Web UI"
+	echo "2) Сбросить пароль администратора Web UI"
+	echo "3) Создать резервную копию (Backup)"
+	echo "4) Удалить только Web-панель (оставить OpenVPN)"
+	echo "5) Полное удаление (OpenVPN + Web-панель)"
+	echo "6) Выход"
+	read -rp "Выберите действие [1-6]: " MENU_CHOICE
 
-    case "$MENU_CHOICE" in
-        2) reset_password_menu ;;
-        3) create_backup; exit 0 ;;
-        4) uninstall_panel_only; exit 0 ;;
-        5) uninstall_full; exit 0 ;;
-        6) exit 0 ;;
-        *) echo "[*] Переход к процессу установки/обновления..." ;;
-    esac
+	case "$MENU_CHOICE" in
+		2) reset_password_menu ;;
+		3) create_backup; exit 0 ;;
+		4) uninstall_panel_only; exit 0 ;;
+		5) uninstall_full; exit 0 ;;
+		6) exit 0 ;;
+		*) echo "[*] Переход к процессу установки/обновления..." ;;
+	esac
 fi
 
 # ============================================================
@@ -204,28 +207,28 @@ fi
 echo "[*] Обновление пакетов и установка системных зависимостей..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    python3 python3-pip python3-venv iptables ipset curl wget tar dnsmasq openssl
+	python3 python3-pip python3-venv iptables ipset curl wget tar dnsmasq openssl
 
 SERVER_IP=$(curl -s4 https://api.ipify.org || curl -s4 https://ifconfig.me || ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
 
 INSTALL_OVPN=true
 if [[ -f "$SERVER_CONF" ]]; then
-    CURRENT_PORT=$(grep -E '^\s*port\s+' "$SERVER_CONF" | awk '{print $2}' || echo "1984")
-    CURRENT_PROTO=$(grep -E '^\s*proto\s+' "$SERVER_CONF" | awk '{print $2}' || echo "udp")
-    CURRENT_SUBNET=$(grep -E '^\s*server\s+' "$SERVER_CONF" | awk '{print $2, $3}' || echo "10.8.0.0 255.255.255.0")
+	CURRENT_PORT=$(grep -E '^\s*port\s+' "$SERVER_CONF" | awk '{print $2}' || echo "1984")
+	CURRENT_PROTO=$(grep -E '^\s*proto\s+' "$SERVER_CONF" | awk '{print $2}' || echo "udp")
+	CURRENT_SUBNET=$(grep -E '^\s*server\s+' "$SERVER_CONF" | awk '{print $2, $3}' || echo "10.8.0.0 255.255.255.0")
 
-    echo "[!] Обнаружен существующий OpenVPN сервер ($CURRENT_PROTO:$CURRENT_PORT, $CURRENT_SUBNET)."
-    INSTALL_OVPN=false
-    OVPN_PORT="$CURRENT_PORT"
-    OVPN_PROTO="$CURRENT_PROTO"
+	echo "[!] Обнаружен существующий OpenVPN сервер ($CURRENT_PROTO:$CURRENT_PORT, $CURRENT_SUBNET)."
+	INSTALL_OVPN=false
+	OVPN_PORT="$CURRENT_PORT"
+	OVPN_PROTO="$CURRENT_PROTO"
 else
-    echo "[?] OpenVPN сервер не обнаружен."
-    read -rp "Установить OpenVPN сервер скриптом Nyr? [Y/n]: " PROCEED_INSTALL
-    PROCEED_INSTALL=${PROCEED_INSTALL:-Y}
-    if [[ ! "$PROCEED_INSTALL" =~ ^[Yy]$ ]]; then
-        echo "[-] Отмена."
-        exit 0
-    fi
+	echo "[?] OpenVPN сервер не обнаружен."
+	read -rp "Установить OpenVPN сервер скриптом Nyr? [Y/n]: " PROCEED_INSTALL
+	PROCEED_INSTALL=${PROCEED_INSTALL:-Y}
+	if [[ ! "$PROCEED_INSTALL" =~ ^[Yy]$ ]]; then
+		echo "[-] Отмена."
+		exit 0
+	fi
 fi
 
 echo ""
@@ -236,42 +239,42 @@ read -rp "Выбор [1]: " HOST_TYPE_CHOICE
 HOST_TYPE_CHOICE=${HOST_TYPE_CHOICE:-1}
 
 if [[ "$HOST_TYPE_CHOICE" == "2" ]]; then
-    while true; do
-        read -rp "Введите домен: " OVPN_DOMAIN
-        OVPN_DOMAIN=$(echo "$OVPN_DOMAIN" | tr -d '[:space:]')
-        [[ -z "$OVPN_DOMAIN" ]] && continue
-        RESOLVED_IP=$(getent ahosts "$OVPN_DOMAIN" | awk '{print $1}' | head -n1 || true)
-        if [[ -z "$RESOLVED_IP" ]]; then
-            echo "[-] Домен не резолвится!"
-            continue
-        fi
-        break
-    done
+	while true; do
+		read -rp "Введите домен: " OVPN_DOMAIN
+		OVPN_DOMAIN=$(echo "$OVPN_DOMAIN" | tr -d '[:space:]')
+		[[ -z "$OVPN_DOMAIN" ]] && continue
+		RESOLVED_IP=$(getent ahosts "$OVPN_DOMAIN" | awk '{print $1}' | head -n1 || true)
+		if [[ -z "$RESOLVED_IP" ]]; then
+			echo "[-] Домен не резолвится!"
+			continue
+		fi
+		break
+	done
 else
-    OVPN_DOMAIN="$SERVER_IP"
+	OVPN_DOMAIN="$SERVER_IP"
 fi
 
 if [[ "$INSTALL_OVPN" == "true" ]]; then
-    echo ""
-    echo "--- Параметры OpenVPN ---"
-    read -rp "Протокол: 1) UDP  2) TCP [1]: " PROTO_INPUT
-    PROTO_INPUT=${PROTO_INPUT:-1}
-    OVPN_PROTO="udp"
-    [[ "$PROTO_INPUT" == "2" ]] && OVPN_PROTO="tcp"
+	echo ""
+	echo "--- Параметры OpenVPN ---"
+	read -rp "Протокол: 1) UDP  2) TCP [1]: " PROTO_INPUT
+	PROTO_INPUT=${PROTO_INPUT:-1}
+	OVPN_PROTO="udp"
+	[[ "$PROTO_INPUT" == "2" ]] && OVPN_PROTO="tcp"
 
-    read -rp "Порт OpenVPN [1984]: " PORT_INPUT
-    OVPN_PORT=${PORT_INPUT:-1984}
+	read -rp "Порт OpenVPN [1984]: " PORT_INPUT
+	OVPN_PORT=${PORT_INPUT:-1984}
 
-    read -rp "DNS: 1) Системный  2) Google  3) Cloudflare [3]: " DNS_INPUT
-    DNS_INPUT=${DNS_INPUT:-3}
-    case "$DNS_INPUT" in
-        1) NYR_DNS="1" ;;
-        2) NYR_DNS="2" ;;
-        *) NYR_DNS="3" ;;
-    esac
+	read -rp "DNS: 1) Системный  2) Google  3) Cloudflare [3]: " DNS_INPUT
+	DNS_INPUT=${DNS_INPUT:-3}
+	case "$DNS_INPUT" in
+		1) NYR_DNS="1" ;;
+		2) NYR_DNS="2" ;;
+		*) NYR_DNS="3" ;;
+	esac
 
-    read -rp "Имя первого клиента [client]: " FIRST_CLIENT
-    FIRST_CLIENT=${FIRST_CLIENT:-client}
+	read -rp "Имя первого клиента [client]: " FIRST_CLIENT
+	FIRST_CLIENT=${FIRST_CLIENT:-client}
 fi
 
 echo ""
@@ -284,7 +287,7 @@ ADMIN_LOGIN=${ADMIN_LOGIN:-admin}
 
 read -rp "Пароль администратора [Enter для автогенерации]: " ADMIN_PASSWORD
 if [[ -z "$ADMIN_PASSWORD" ]]; then
-    ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
+	ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
 fi
 
 ADMIN_PASSWORD_HASH=$(hash_password "$ADMIN_PASSWORD")
@@ -293,27 +296,27 @@ SESSION_SECRET=$(openssl rand -hex 32)
 
 # Установка OpenVPN через Nyr с корректным распознаванием NAT
 if [[ "$INSTALL_OVPN" == "true" ]]; then
-    echo "[*] Запуск установки OpenVPN..."
-    curl -sSL https://raw.githubusercontent.com/Nyr/openvpn-install/master/openvpn-install.sh -o /tmp/openvpn-install.sh
-    chmod +x /tmp/openvpn-install.sh
+	echo "[*] Запуск установки OpenVPN..."
+	curl -sSL https://raw.githubusercontent.com/Nyr/openvpn-install/master/openvpn-install.sh -o /tmp/openvpn-install.sh
+	chmod +x /tmp/openvpn-install.sh
 
-    IS_NAT=$(ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)' | head -n1 || true)
+	IS_NAT=$(ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)' | head -n1 || true)
 
-    if [[ -n "$IS_NAT" ]]; then
-        printf "\n%s\n%s\n%s\n%s\n%s\n\n" \
-            "$OVPN_DOMAIN" \
-            "$PROTO_INPUT" \
-            "$OVPN_PORT" \
-            "$NYR_DNS" \
-            "$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
-    else
-        printf "\n%s\n%s\n%s\n%s\n\n" \
-            "$PROTO_INPUT" \
-            "$OVPN_PORT" \
-            "$NYR_DNS" \
-            "$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
-    fi
-    rm -f /tmp/openvpn-install.sh
+	if [[ -n "$IS_NAT" ]]; then
+		printf "\n%s\n%s\n%s\n%s\n%s\n\n" \
+			"$OVPN_DOMAIN" \
+			"$PROTO_INPUT" \
+			"$OVPN_PORT" \
+			"$NYR_DNS" \
+			"$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
+	else
+		printf "\n%s\n%s\n%s\n%s\n\n" \
+			"$PROTO_INPUT" \
+			"$OVPN_PORT" \
+			"$NYR_DNS" \
+			"$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
+	fi
+	rm -f /tmp/openvpn-install.sh
 fi
 
 # Конфигурация Management сокета и директорий OpenVPN
@@ -322,13 +325,13 @@ mkdir -p /etc/openvpn/server/ccd
 mkdir -p /var/run/openvpn-server
 
 if ! grep -qE '^\s*management\s+' "$SERVER_CONF"; then
-    echo -e "\nmanagement 127.0.0.1 7505" >> "$SERVER_CONF"
+	echo -e "\nmanagement 127.0.0.1 7505" >> "$SERVER_CONF"
 fi
 if ! grep -qE '^\s*client-config-dir\s+' "$SERVER_CONF"; then
-    echo -e "\nclient-config-dir /etc/openvpn/server/ccd" >> "$SERVER_CONF"
+	echo -e "\nclient-config-dir /etc/openvpn/server/ccd" >> "$SERVER_CONF"
 fi
 if ! grep -qE '^\s*status\s+' "$SERVER_CONF"; then
-    echo -e "\nstatus /var/run/openvpn-server/status-server.log 1\nstatus-version 2" >> "$SERVER_CONF"
+	echo -e "\nstatus /var/run/openvpn-server/status-server.log 1\nstatus-version 2" >> "$SERVER_CONF"
 fi
 
 systemctl daemon-reload
@@ -367,7 +370,7 @@ sync_db_credentials "$ADMIN_LOGIN" "$ADMIN_PASSWORD_HASH"
 
 # Открытие порта в UFW
 if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
-    ufw allow "$PANEL_PORT"/tcp >/dev/null 2>&1 || true
+	ufw allow "$PANEL_PORT"/tcp >/dev/null 2>&1 || true
 fi
 
 # Настройка службы systemd
