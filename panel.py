@@ -1224,7 +1224,7 @@ MAIN_HTML = """
 		<div class="brand">
 			<div class="brand-text">
 				<h1 data-i18n="app_title">OpenVPN Dashboard</h1>
-				<p data-i18n="app_subtitle">Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
+				<p>Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
 			</div>
 		</div>
 		<div class="header-actions">
@@ -1657,8 +1657,6 @@ MAIN_HTML = """
 <script>
 const i18n = {
 	ru: {
-		app_title: "OpenVPN Dashboard",
-		app_subtitle: "Control Center",
 		btn_create_client: "Создать",
 		btn_backup: "Бэкап",
 		btn_logout: "Выйти",
@@ -1813,8 +1811,6 @@ const i18n = {
 		split_details_desc: "Разрешите URL в IP для выборочной маршрутизации через WireGuard или напрямую."
 	},
 	en: {
-		app_title: "OpenVPN Dashboard",
-		app_subtitle: "Control Center",
 		btn_create_client: "Create",
 		btn_backup: "Backup",
 		btn_logout: "Logout",
