@@ -1223,7 +1223,7 @@ MAIN_HTML = """
 	<header class="header">
 		<div class="brand">
 			<div class="brand-text">
-				<h1 data-i18n="app_title">OpenVPN Dashboard</h1>
+				<h1>OpenVPN Dashboard</h1>
 				<p>Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
 			</div>
 		</div>
