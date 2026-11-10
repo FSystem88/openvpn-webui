@@ -2612,7 +2612,6 @@ function renderClientsGrid(clients) {
 			`;
 		} else {
 			actionsHtml = `
-				<button class="btn btn-sm btn-success" onclick='restoreRevokedClient("${c.name}")'>♻️ Восстановить</button>
 				<button class="btn btn-sm btn-danger" onclick='revokeClient("${c.name}", true)'>${t('btn_delete_forever')}</button>
 			`;
 		}
@@ -2646,19 +2645,7 @@ function renderClientsGrid(clients) {
 	grid.innerHTML = html;
 }
 
-async function restoreRevokedClient(name) {
-	if (!confirm(`Восстановить доступ для клиента ${name}?`)) return;
-	try {
-		const res = await fetch(`/api/clients/${encodeURIComponent(name)}/restore`, { method: 'POST' });
-		const d = await res.json();
-		if (d.success) {
-			showToast('✅ Клиент восстановлен');
-			loadClients();
-		} else {
-			showToast('❌ ' + (d.message || 'Ошибка'), 'error');
-		}
-	} catch (e) { showToast(t('toast_network_error'), 'error'); }
-}
+
 
 function showQrModal(name, token) {
 	if (!token) return;
@@ -5029,54 +5016,6 @@ async def api_download_config(name: str):
     except Exception:
         raise HTTPException(status_code=500, detail="Error generating config")
 
-def unrevoke_client_sync(client_name: str) -> Tuple[bool, str]:
-    if not re.match(r"^[a-zA-Z0-9_-]+$", client_name):
-        return False, "Invalid name"
-    try:
-        if not INDEX_TXT_PATH.exists():
-            return False, "index.txt missing"
-
-        lines = INDEX_TXT_PATH.read_text(encoding="utf-8", errors="ignore").splitlines()
-        new_lines = []
-        found = False
-        for l in lines:
-            if re.search(rf"/CN={re.escape(client_name)}(?:$|/|\s)", l):
-                parts = l.split("\t")
-                if len(parts) >= 6:
-                    parts[0] = "V"
-                    parts[2] = ""
-                    l = "\t".join(parts)
-                    found = True
-            new_lines.append(l)
-
-        if not found:
-            return False, "Client not found in index.txt"
-
-        INDEX_TXT_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-
-        subprocess.run(["./easyrsa", "--batch", "gen-crl"], cwd=str(OVPN_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        crl_file = PKI_DIR / "crl.pem"
-        target_crl = SERVER_DIR / "crl.pem"
-        if crl_file.exists():
-            shutil.copy2(str(crl_file), str(target_crl))
-            os.chmod(str(target_crl), 0o644)
-
-        subprocess.run(["./easyrsa", "--batch", "inline", client_name], cwd=str(OVPN_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        (CCD_DIR / client_name).unlink(missing_ok=True)
-        with get_db() as conn:
-            conn.execute("UPDATE client_meta SET is_paused = 0 WHERE client_name = ?", (client_name,))
-
-        subprocess.run(["systemctl", "reload-or-restart", "openvpn-server@server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        invalidate_pki_cache()
-        return True, "OK"
-    except Exception as e:
-        return False, str(e)
-
-@app.post("/api/clients/{name}/restore")
-async def api_restore_client(name: str):
-    ok, msg = await asyncio.to_thread(unrevoke_client_sync, name)
-    return {"success": ok, "message": msg}
 
 @app.get("/d/{token}")
 async def public_landing_page(token: str, request: Request):
