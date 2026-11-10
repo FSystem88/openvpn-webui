@@ -33,7 +33,7 @@ except ImportError:
 DOMAIN = os.getenv("OVPN_DOMAIN", "127.0.0.1")
 OVPN_PORT = int(os.getenv("OVPN_PORT", "1984"))
 PROTOCOL = os.getenv("OVPN_PROTO", "udp")
-PANEL_PORT = int(os.getenv("PANEL_PORT", "1338"))
+PANEL_PORT = int(os.getenv("PANEL_PORT", "8080"))
 TUN_IFACE = os.getenv("OVPN_TUN_IFACE", "tun0")
 
 SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_hex(32)
@@ -1224,7 +1224,7 @@ MAIN_HTML = """
 		<div class="brand">
 			<div class="brand-text">
 				<h1 data-i18n="app_title">OpenVPN Dashboard</h1>
-				<p data-i18n="app_subtitle">Control Center by <a href="https://github.com/FSystem88" style=" color: var(--text-muted); ">FSystem88</a></p>
+				<p data-i18n="app_subtitle">Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
 			</div>
 		</div>
 		<div class="header-actions">
@@ -2032,6 +2032,26 @@ function showToast(msg, type = 'success') {
 	box._t = setTimeout(() => box.classList.remove('show'), 3200);
 }
 
+// Универсальное копирование (работает на HTTP и IP без SSL)
+function copyToClipboard(text) {
+	if (navigator.clipboard && window.isSecureContext) {
+		return navigator.clipboard.writeText(text);
+	} else {
+		const textArea = document.createElement("textarea");
+		textArea.value = text;
+		textArea.style.position = "fixed";
+		textArea.style.left = "-999999px";
+		textArea.style.top = "-999999px";
+		document.body.appendChild(textArea);
+		textArea.focus();
+		textArea.select();
+		return new Promise((resolve, reject) => {
+			document.execCommand('copy') ? resolve() : reject();
+			textArea.remove();
+		});
+	}
+}
+
 function applyDynamicFeatureVisibility() {
 	const hwBar = document.getElementById('hardwareBar');
 	if (hwBar) hwBar.style.display = panelConfig.enable_hardware_bar === "1" ? 'grid' : 'none';
@@ -2655,7 +2675,7 @@ function showQrModal(name, token) {
 		level: 'M'
 	});
 	document.getElementById('qrCopyBtn').onclick = () => {
-		navigator.clipboard.writeText(link).then(() => showToast(t('toast_link_copied')));
+		copyToClipboard(link).then(() => showToast(t('toast_link_copied'))).catch(() => showToast('Ошибка копирования', 'error'));
 	};
 	document.getElementById('qrModal').classList.add('active');
 }
@@ -2718,7 +2738,7 @@ function downloadClientConfig(name) {
 function copyShareUrl(token) {
 	if (!token) return;
 	const link = `${location.origin}/d/${encodeURIComponent(token)}`;
-	navigator.clipboard.writeText(link).then(() => showToast(t('toast_link_copied')));
+	copyToClipboard(link).then(() => showToast(t('toast_link_copied'))).catch(() => showToast('Ошибка копирования', 'error'));
 }
 
 async function loadRoutingView() {
@@ -2904,7 +2924,7 @@ async function loadSettingsView() {
 
 			document.getElementById('setAdminLogin').value = s.admin_login || '';
 			document.getElementById('setAdminPass').value = '';
-			document.getElementById('setPanelPort').value = s.panel_port || 1338;
+			document.getElementById('setPanelPort').value = s.panel_port || 8080;
 			document.getElementById('setOvpnDomain').value = s.ovpn_domain || '';
 
 			document.getElementById('setEnableSpeed').checked = s.enable_speed_monitor !== "0";
@@ -3067,7 +3087,7 @@ async function saveAllAccountSettings(applyToOvpn = false) {
 	const payload = {
 		admin_login: document.getElementById('setAdminLogin').value.trim(),
 		admin_password: document.getElementById('setAdminPass').value,
-		panel_port: parseInt(document.getElementById('setPanelPort').value) || 1338,
+		panel_port: parseInt(document.getElementById('setPanelPort').value) || 8080,
 		ovpn_domain: document.getElementById('setOvpnDomain').value.trim(),
 		enable_speed_monitor: document.getElementById('setEnableSpeed').checked ? "1" : "0",
 		enable_hardware_bar: document.getElementById('setEnableHwBar').checked ? "1" : "0",
@@ -3303,6 +3323,9 @@ LANDING_HTML = """
 			box-shadow: none; color: #f8fafc;
 		}
 		.btn-outline:hover { background: rgba(51, 65, 85, 0.8); }
+		.notice {
+			font-size: 12px; color: #94a3b8; margin-top: 14px; line-height: 1.4;
+		}
 	</style>
 </head>
 <body>
@@ -3310,20 +3333,29 @@ LANDING_HTML = """
 <div class="card">
 	<div class="logo">🛡️</div>
 	<h1>{client_name}</h1>
-	<p>Отсканируйте QR-код или импортируйте профиль</p>
+	<p>Скачайте файл профиля и откройте его в приложении OpenVPN Connect</p>
 	<div class="qr-box">
 		<canvas id="qrCanvas"></canvas>
 	</div>
-	<a href="openvpn://import-profile/{raw_url}" class="btn">⚡ Подключить OpenVPN</a>
-	<a href="/d/{token}/raw" class="btn btn-outline">⬇️ Скачать файл конфигурации</a>
+	<a href="/d/{token}/raw" class="btn">⬇️ Скачать .ovpn профиль</a>
+	<div id="importBtnBox"></div>
+	<div class="notice">
+		Подсказка: на телефоне нажмите <b>«Скачать .ovpn»</b> и выберите <i>«Открыть с помощью OpenVPN»</i>.
+	</div>
 </div>
 <script>
 	new QRious({
 		element: document.getElementById('qrCanvas'),
-		value: "{raw_url}",
+		value: window.location.href,
 		size: 200,
 		level: 'M'
 	});
+
+	// Кнопка прямого импорта работает только при наличии HTTPS
+	if (window.location.protocol === 'https:') {
+		const importBox = document.getElementById('importBtnBox');
+		importBox.innerHTML = '<a href="openvpn://import-profile/{raw_url}" class="btn btn-outline">⚡ Авто-импорт в OpenVPN</a>';
+	}
 </script>
 </body>
 </html>
@@ -5129,6 +5161,7 @@ async def api_backup():
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = f"openvpn_backup_{date_str}.tar.gz"
         tmp_path = Path(tempfile.gettempdir()) / filename
+        env_file = Path(__file__).resolve().parent / ".env"
         with tempfile.TemporaryDirectory() as tmpdir:
             base_dir = Path(tmpdir)
             if Path("/etc/openvpn").exists():
@@ -5139,6 +5172,8 @@ async def api_backup():
                 shutil.copytree("/etc/dnsmasq.d", base_dir / "dnsmasq.d", dirs_exist_ok=True)
             if DB_PATH.exists():
                 shutil.copy2(DB_PATH, base_dir / "panel.db")
+            if env_file.exists():
+                shutil.copy2(env_file, base_dir / ".env")
 
             with tarfile.open(tmp_path, "w:gz") as tar:
                 tar.add(base_dir, arcname="backup_data")
@@ -5166,6 +5201,7 @@ async def api_restore(file: UploadFile = File(...)):
         def _do_restore():
             tmp_path = Path(tempfile.gettempdir()) / "restore_backup.tar.gz"
             tmp_path.write_bytes(raw_bytes)
+            env_target = Path(__file__).resolve().parent / ".env"
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 base_dest = Path(tmpdir).resolve()
@@ -5175,7 +5211,8 @@ async def api_restore(file: UploadFile = File(...)):
                         if not str(member_path).startswith(str(base_dest)):
                             tmp_path.unlink(missing_ok=True)
                             return False, "Unsafe path traversal detected in archive"
-                    tar.extractall(path=base_dest, filter="data" if hasattr(tarfile, "data_filter") else None)
+                    # Безопасный вызов extractall без filter для обратной совместимости с Python 3.10/3.11
+                    tar.extractall(path=base_dest)
 
                 src_root = base_dest / "backup_data"
                 if not src_root.exists():
@@ -5190,7 +5227,9 @@ async def api_restore(file: UploadFile = File(...)):
                 if (src_root / "panel.db").exists():
                     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(src_root / "panel.db", DB_PATH)
-                
+                if (src_root / ".env").exists():
+                    shutil.copy2(src_root / ".env", env_target)
+                    os.chmod(env_target, 0o600)
 
             tmp_path.unlink(missing_ok=True)
             invalidate_pki_cache()
