@@ -114,6 +114,7 @@ MAIN_HTML = """
 			--shadow-md: 0 4px 16px rgba(0,0,0,0.4);
 			--shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
 		}
+
 		[data-theme="light"] {
 			--bg-main: #f8fafc;
 			--bg-card: #ffffff;
@@ -128,278 +129,659 @@ MAIN_HTML = """
 			--shadow-md: 0 4px 16px rgba(0,0,0,0.07);
 			--shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
 		}
+		[data-theme="light"] body {
+			background-color: var(--bg-main);
+			background-image:
+				radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+				radial-gradient(circle at 80% 100%, rgba(124, 58, 237, 0.04) 0%, transparent 50%);
+		}
+		[data-theme="light"] .btn:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning) {
+			background: #f1f5f9;
+			color: #0f172a;
+			border-color: #cbd5e1;
+		}
+		[data-theme="light"] .btn:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning):hover {
+			background: #e2e8f0;
+			border-color: #94a3b8;
+		}
+		[data-theme="light"] .btn-primary {
+			background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+			color: #ffffff !important;
+		}
+		[data-theme="light"] .btn-danger {
+			background: rgba(239, 68, 68, 0.12) !important;
+			color: #dc2626 !important;
+			border-color: rgba(239, 68, 68, 0.3) !important;
+		}
+		[data-theme="light"] .btn-danger:hover {
+			background: #dc2626 !important;
+			color: #ffffff !important;
+		}
+		[data-theme="light"] .btn-success {
+			background: rgba(16, 185, 129, 0.12) !important;
+			color: #059669 !important;
+			border-color: rgba(16, 185, 129, 0.3) !important;
+		}
+		[data-theme="light"] .btn-success:hover {
+			background: #059669 !important;
+			color: #ffffff !important;
+		}
+		[data-theme="light"] .tab-btn:hover,
+		[data-theme="light"] .btn-group-btn:hover {
+			background: #e2e8f0;
+			color: #0f172a;
+		}
+		[data-theme="light"] .tab-btn.active,
+		[data-theme="light"] .page-btn.active,
+		[data-theme="light"] .btn-group-btn.active {
+			color: #ffffff !important;
+		}
+		[data-theme="light"] .client-name,
+		[data-theme="light"] .chart-wrapper h3,
+		[data-theme="light"] .settings-card h3,
+		[data-theme="light"] .modal-card h2,
+		[data-theme="light"] .switch-info strong {
+			color: #0f172a !important;
+		}
+		[data-theme="light"] .modal-card {
+			background: #ffffff;
+			border-color: #cbd5e1;
+		}
+		[data-theme="light"] .session-meta {
+			color: #334155;
+			background: rgba(16, 185, 129, 0.08);
+		}
+		[data-theme="light"] .session-meta strong,
+		[data-theme="light"] .hw-pill strong,
+		[data-theme="light"] .stat-pill strong {
+			color: #0f172a;
+		}
+		[data-theme="light"] .client-card:hover {
+			border-color: #cbd5e1;
+		}
+		[data-theme="light"] .toast {
+			background: #ffffff;
+			color: #0f172a;
+			border-color: #cbd5e1;
+		}
+		[data-theme="light"] .banner-item code {
+			color: #1d4ed8;
+		}
+
 		* { margin: 0; padding: 0; box-sizing: border-box; }
+		html, body { height: 100%; }
 		body {
 			font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 			background: var(--bg-main);
+			background-image:
+				radial-gradient(circle at 20% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+				radial-gradient(circle at 80% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+			background-attachment: fixed;
 			color: var(--text-main);
 			min-height: 100vh;
-			padding: 20px 18px 60px;
+			padding: 24px 20px 60px;
 			-webkit-font-smoothing: antialiased;
 		}
+		* { scrollbar-width: thin; scrollbar-color: rgba(59, 130, 246, 0.35) transparent; }
+		*::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+		*::-webkit-scrollbar-track { background: transparent; }
+		*::-webkit-scrollbar-thumb {
+			background: rgba(59, 130, 246, 0.25);
+			border-radius: 10px;
+			border: 2px solid transparent;
+			background-clip: padding-box;
+		}
+		*::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); background-clip: padding-box; }
+
 		.container { max-width: 1440px; margin: 0 auto; }
 
 		.header {
-			display: flex; justify-content: space-between; align-items: center;
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-xl); padding: 16px 22px; margin-bottom: 16px;
-			box-shadow: var(--shadow-md); flex-wrap: wrap; gap: 12px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-xl);
+			padding: 18px 24px;
+			margin-bottom: 20px;
+			box-shadow: var(--shadow-md);
+			flex-wrap: wrap;
+			gap: 16px;
 		}
-		.brand-text h1 { font-size: 18px; font-weight: 700; }
-		.brand-text p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-		.header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+		.brand { display: flex; align-items: center; gap: 14px; }
+		.brand-text h1 {
+			font-size: 19px;
+			font-weight: 700;
+			letter-spacing: -0.4px;
+			line-height: 1.2;
+		}
+		.brand-text p {
+			font-size: 12px;
+			color: var(--text-muted);
+			margin-top: 2px;
+		}
+		.header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 		.btn {
-			padding: 8px 14px; border-radius: var(--radius-sm); font-size: 12.5px;
-			font-weight: 600; cursor: pointer; transition: all 0.15s ease;
-			border: 1px solid var(--border-subtle); background: #1e293b;
-			color: var(--text-main); display: inline-flex; align-items: center;
-			gap: 6px; text-decoration: none; white-space: nowrap;
+			padding: 9px 16px;
+			border-radius: var(--radius-sm);
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.15s ease;
+			border: 1px solid var(--border-subtle);
+			background: #1e293b;
+			color: var(--text-main);
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			text-decoration: none;
+			white-space: nowrap;
+			line-height: 1.4;
 		}
-		[data-theme="light"] .btn:not(.btn-primary):not(.btn-danger):not(.btn-success):not(.btn-warning) {
-			background: #f1f5f9; color: #0f172a; border-color: #cbd5e1;
+		.btn:hover {
+			background: #293548;
+			border-color: #334155;
+			transform: translateY(-1px);
 		}
-		.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
-		.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-		.btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: transparent; color: #fff; }
-		.btn-success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399; }
-		.btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5; }
-		.btn-warning { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24; }
-		.btn-sm { padding: 5px 9px; font-size: 11.5px; border-radius: 6px; }
+		.btn:active { transform: translateY(0); }
+		.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+		.btn-primary {
+			background: linear-gradient(135deg, #3b82f6, #2563eb);
+			border-color: transparent;
+			box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+			color: #fff;
+		}
+		.btn-primary:hover {
+			background: linear-gradient(135deg, #2563eb, #1d4ed8);
+			box-shadow: 0 6px 18px rgba(59, 130, 246, 0.45);
+		}
+		.btn-success {
+			background: rgba(16, 185, 129, 0.12);
+			border-color: rgba(16, 185, 129, 0.35);
+			color: #34d399;
+		}
+		.btn-success:hover { background: #10b981; color: #fff; border-color: #10b981; }
+		.btn-danger {
+			background: rgba(239, 68, 68, 0.12);
+			border-color: rgba(239, 68, 68, 0.35);
+			color: #fca5a5;
+		}
+		.btn-danger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+		.btn-warning {
+			background: rgba(245, 158, 11, 0.12);
+			border-color: rgba(245, 158, 11, 0.35);
+			color: #fcd34d;
+		}
+		.btn-warning:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+		.btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
 
-		.lang-select, .control-select, .search-input, .textarea-input {
-			padding: 9px 12px; background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-sm); color: var(--text-main); font-size: 13px;
-			outline: none; font-family: inherit;
+		.lang-select, .control-select {
+			padding: 9px 14px;
+			background: var(--bg-input);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-sm);
+			color: var(--text-main);
+			font-size: 13px;
+			font-weight: 500;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.15s ease;
+			font-family: inherit;
+			appearance: none;
+			background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: right 10px center;
+			padding-right: 30px;
 		}
-		.search-input:focus, .textarea-input:focus, .control-select:focus {
+		.lang-select:focus, .control-select:focus {
 			border-color: var(--primary);
+			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 		}
-		.textarea-input { font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical; }
 
-		/* Индикатор прогресса фоновых задач */
 		.task-progress-banner {
-			display: none; background: var(--bg-card); border: 1px solid rgba(59, 130, 246, 0.45);
-			border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px;
+			display: none;
+			background: var(--bg-card);
+			border: 1px solid rgba(59, 130, 246, 0.45);
+			border-radius: var(--radius-md);
+			padding: 12px 18px;
+			margin-bottom: 18px;
 			box-shadow: var(--shadow-sm);
 		}
 		.task-progress-banner.active { display: block; }
-		.task-progress-top { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 8px; gap: 10px; }
+		.task-progress-top {
+			display: flex; justify-content: space-between; align-items: center;
+			font-size: 12.5px; margin-bottom: 8px; gap: 10px;
+		}
 		.progress-track { width: 100%; height: 7px; background: var(--bg-input); border-radius: 99px; overflow: hidden; }
 		.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.25s ease; }
 
 		.hardware-bar {
-			display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 12px;
+			margin-bottom: 20px;
 		}
 		.hw-pill {
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-md); padding: 12px 16px;
-			display: flex; align-items: center; justify-content: space-between; gap: 10px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md);
+			padding: 14px 18px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			box-shadow: var(--shadow-sm);
+			transition: all 0.2s;
+			min-width: 0;
 		}
-		.hw-label { font-size: 12px; color: var(--text-muted); }
-		.hw-pill strong { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+		.hw-pill:hover { border-color: #334155; }
+		.hw-pill .hw-label {
+			font-size: 12px;
+			color: var(--text-muted);
+			font-weight: 500;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			white-space: nowrap;
+		}
+		.hw-pill strong {
+			font-family: 'JetBrains Mono', 'SF Mono', monospace;
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--text-main);
+			white-space: nowrap;
+		}
 
 		.status-banner {
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 18px;
-			display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			padding: 16px 22px;
+			margin-bottom: 22px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 16px;
+			box-shadow: var(--shadow-sm);
 		}
-		.banner-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+		.banner-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 13.5px;
+			color: var(--text-dim);
+		}
 		.banner-item code {
-			background: var(--bg-input); padding: 4px 10px; border-radius: 6px;
-			color: #60a5fa; border: 1px solid var(--border-subtle); font-family: 'JetBrains Mono', monospace; font-size: 12px;
+			background: var(--bg-input);
+			padding: 5px 12px;
+			border-radius: 6px;
+			color: #60a5fa;
+			border: 1px solid var(--border-subtle);
+			font-family: 'JetBrains Mono', 'SF Mono', monospace;
+			font-size: 12.5px;
 		}
-		.status-badge { font-weight: 600; font-size: 12.5px; padding: 4px 10px; border-radius: 20px; }
-		.status-badge.active { color: #34d399; background: rgba(16, 185, 129, 0.12); }
-		.status-badge.inactive { color: #f87171; background: rgba(239, 68, 68, 0.12); }
+		.status-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			font-weight: 600;
+			font-size: 13px;
+			padding: 5px 12px;
+			border-radius: 20px;
+		}
+		.status-badge.active { color: #34d399; background: rgba(16, 185, 129, 0.1); }
+		.status-badge.inactive { color: #f87171; background: rgba(239, 68, 68, 0.1); }
 
 		.tabs-bar {
-			display: flex; gap: 4px; background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-md); padding: 5px; margin-bottom: 18px; overflow-x: auto;
+			display: flex;
+			gap: 4px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md);
+			padding: 6px;
+			margin-bottom: 22px;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
 		}
+		.tabs-bar::-webkit-scrollbar { display: none; }
 		.tab-btn {
-			padding: 9px 16px; cursor: pointer; color: var(--text-muted); font-size: 13px;
-			font-weight: 600; border-radius: var(--radius-sm); white-space: nowrap; user-select: none;
+			padding: 10px 18px;
+			cursor: pointer;
+			color: var(--text-muted);
+			font-size: 13.5px;
+			font-weight: 600;
+			border-radius: var(--radius-sm);
+			white-space: nowrap;
+			transition: all 0.15s ease;
+			user-select: none;
 		}
-		.tab-btn:hover { color: var(--text-main); background: rgba(59, 130, 246, 0.08); }
-		.tab-btn.active { color: #fff; background: linear-gradient(135deg, #3b82f6, #2563eb); }
-		.tab-view { display: none; }
+		.tab-btn:hover { color: var(--text-main); background: #1e293b; }
+		.tab-btn.active {
+			color: #fff;
+			background: linear-gradient(135deg, #3b82f6, #2563eb);
+			box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+		}
+		.tab-view { display: none; animation: fadeIn 0.2s ease; }
 		.tab-view.active { display: block; }
+		@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-		.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-		.search-wrapper { position: relative; flex: 1; min-width: 180px; display: flex; align-items: center; }
-		.search-wrapper .search-input { width: 100%; padding-right: 34px; }
+		.filter-bar {
+			display: flex;
+			gap: 12px;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+			align-items: center;
+		}
+		.search-input, .textarea-input {
+			flex: 1;
+			min-width: 180px;
+			padding: 11px 14px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-sm);
+			color: var(--text-main);
+			font-size: 13.5px;
+			outline: none;
+			transition: all 0.15s ease;
+			font-family: inherit;
+		}
+		.search-input::placeholder, .textarea-input::placeholder { color: var(--text-muted); }
+		.search-input:focus, .textarea-input:focus {
+			border-color: var(--primary);
+			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+		}
+		.search-wrapper {
+			position: relative;
+			flex: 1;
+			min-width: 180px;
+			display: flex;
+			align-items: center;
+		}
+		.search-wrapper .search-input { width: 100%; padding-right: 36px; }
 		.search-clear-btn {
-			position: absolute; right: 8px; background: rgba(148, 163, 184, 0.15); border: none;
-			color: var(--text-dim); width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: none;
+			position: absolute;
+			right: 10px;
+			background: rgba(148, 163, 184, 0.15);
+			border: none;
+			color: var(--text-dim);
+			width: 22px;
+			height: 22px;
+			border-radius: 50%;
+			font-size: 12px;
+			cursor: pointer;
+			display: none;
+			align-items: center;
+			justify-content: center;
 		}
+		.textarea-input { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 12.5px; line-height: 1.6; resize: vertical; }
 
-		/* Минималистичная карточка клиента + раскрывашка */
+		/* Полноценные карточки клиентов + аккуратное раскрытие доп. деталей */
 		.clients-grid {
-			display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: start;
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 14px;
+			align-items: start;
 		}
-		@media (max-width: 1360px) { .clients-grid { grid-template-columns: repeat(3, 1fr); } }
-		@media (max-width: 980px) { .clients-grid { grid-template-columns: repeat(2, 1fr); } }
-		@media (max-width: 640px) { .clients-grid { grid-template-columns: 1fr; } }
+		@media (max-width: 1400px) { .clients-grid { grid-template-columns: repeat(3, 1fr); } }
+		@media (max-width: 1000px) { .clients-grid { grid-template-columns: repeat(2, 1fr); } }
+		@media (max-width: 680px) { .clients-grid { grid-template-columns: 1fr; } }
 
 		.client-card {
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-md); padding: 14px 16px; transition: all 0.15s ease;
-			position: relative; overflow: hidden;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			padding: 18px;
+			transition: all 0.2s ease;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			box-shadow: var(--shadow-sm);
+			position: relative;
+			overflow: hidden;
+			min-width: 0;
 		}
-		.client-card.online-card { border-color: rgba(16, 185, 129, 0.4); }
-		.client-card.paused-card { border-color: rgba(245, 158, 11, 0.4); }
-		.client-card:hover { background: var(--bg-card-hover); }
-
-		.card-summary {
-			display: flex; justify-content: space-between; align-items: center;
-			gap: 8px; cursor: pointer; user-select: none;
+		.client-card::before {
+			content: '';
+			position: absolute;
+			top: 0; left: 0; right: 0;
+			height: 3px;
+			background: transparent;
+			transition: background 0.2s;
 		}
-		.card-main-info { min-width: 0; flex: 1; }
-		.client-name-row { display: flex; align-items: center; gap: 7px; }
-		.client-name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-		.client-subline {
-			display: flex; align-items: center; gap: 8px; margin-top: 4px;
-			font-size: 11.5px; color: var(--text-muted); flex-wrap: wrap;
+		.client-card.online-card::before { background: linear-gradient(90deg, #10b981, #06b6d4); }
+		.client-card.paused-card::before { background: linear-gradient(90deg, #f59e0b, #eab308); }
+		.client-card:hover {
+			border-color: #334155;
+			transform: translateY(-2px);
+			box-shadow: var(--shadow-md);
 		}
+		.card-top {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			margin-bottom: 10px;
+			gap: 8px;
+		}
+		.client-name { font-size: 15px; font-weight: 700; word-break: break-all; line-height: 1.3; color: #fff; }
 		.client-badge {
-			font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700;
-			text-transform: uppercase; white-space: nowrap;
+			font-size: 10px;
+			padding: 3px 9px;
+			border-radius: 20px;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.4px;
+			white-space: nowrap;
+			flex-shrink: 0;
 		}
-		.client-badge.valid { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-		.client-badge.paused { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-		.client-badge.revoked { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-		.expand-chevron { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
-		.client-card.expanded .expand-chevron { transform: rotate(180deg); color: var(--primary); }
+		.client-badge.valid { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+		.client-badge.paused { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+		.client-badge.revoked { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
-		.card-details-drawer {
-			display: none; margin-top: 12px; padding-top: 12px;
-			border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--text-dim);
+		.client-note {
+			font-size: 11.5px;
+			color: #fbbf24;
+			margin-bottom: 8px;
+			font-style: italic;
+			padding: 5px 9px;
+			background: rgba(245, 158, 11, 0.06);
+			border-radius: 6px;
+			border-left: 2px solid #f59e0b;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
-		.client-card.expanded .card-details-drawer { display: block; }
-		.detail-kv { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 11.5px; }
-		.detail-kv strong { font-family: 'JetBrains Mono', monospace; color: var(--text-main); font-weight: 600; text-align: right; }
+		.card-details { font-size: 12px; color: var(--text-dim); line-height: 1.55; margin-bottom: 8px; }
+		.session-meta {
+			background: rgba(16, 185, 129, 0.05);
+			border: 1px solid rgba(16, 185, 129, 0.18);
+			border-radius: var(--radius-sm);
+			padding: 8px 10px;
+			margin: 8px 0;
+			font-size: 11.5px;
+			color: #cbd5e1;
+		}
+		.session-meta.offline-meta { background: var(--bg-input); border-color: var(--border-subtle); color: var(--text-muted); }
+		.session-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+		.session-row strong { font-family: 'JetBrains Mono', monospace; color: #e2e8f0; font-weight: 600; }
 		.live-speed-row {
-			display: flex; justify-content: space-between; margin: 8px 0;
-			font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600;
+			display: flex;
+			justify-content: space-between;
+			margin-top: 6px;
+			font-weight: 600;
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 11.5px;
 		}
+
+		.expand-toggle-btn {
+			width: 100%;
+			margin-top: 6px;
+			padding: 5px 8px;
+			background: var(--bg-input);
+			border: 1px dashed var(--border-subtle);
+			border-radius: 6px;
+			color: var(--text-muted);
+			font-size: 11px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.expand-toggle-btn:hover { color: var(--text-main); border-color: var(--primary); }
+		.card-extra-info {
+			display: none;
+			margin-top: 8px;
+			padding: 8px 10px;
+			background: var(--bg-input);
+			border-radius: 8px;
+			font-size: 11px;
+			color: var(--text-dim);
+		}
+		.client-card.expanded .card-extra-info { display: block; }
+		.extra-line { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+		.extra-line:last-child { margin-bottom: 0; }
+		.extra-line strong { font-family: 'JetBrains Mono', monospace; color: var(--text-main); }
+
 		.card-actions {
-			display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px;
+			display: flex;
+			gap: 5px;
+			flex-wrap: wrap;
+			margin-top: 12px;
+			padding-top: 12px;
 			border-top: 1px solid var(--border-subtle);
 		}
-		.card-actions .btn { flex: 1; justify-content: center; min-width: 0; }
+		.card-actions .btn { flex: 1; justify-content: center; min-width: 0; padding: 6px 8px; font-size: 11.5px; }
 
 		.pagination-bar {
-			display: flex; justify-content: space-between; align-items: center;
-			margin-top: 18px; padding: 12px 18px; background: var(--bg-card);
-			border: 1px solid var(--border-subtle); border-radius: var(--radius-md); flex-wrap: wrap; gap: 10px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 22px;
+			padding: 14px 20px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			flex-wrap: wrap;
+			gap: 12px;
 		}
+		.pagination-info { font-size: 13px; color: var(--text-muted); }
 		.pagination-pages { display: flex; gap: 6px; flex-wrap: wrap; }
 		.page-btn {
-			min-width: 34px; height: 34px; padding: 0 8px; border-radius: 6px;
-			border: 1px solid var(--border-subtle); background: var(--bg-input);
-			color: var(--text-main); font-size: 12.5px; font-weight: 600; cursor: pointer;
+			min-width: 36px; height: 36px; padding: 0 10px; border-radius: var(--radius-sm);
+			border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-main);
+			font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex;
+			align-items: center; justify-content: center;
 		}
-		.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+		.page-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: transparent; color: #fff; }
 
 		.chart-wrapper, .settings-card {
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			padding: 24px;
+			box-shadow: var(--shadow-sm);
 		}
-		.chart-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-		.chart-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-		.btn-group { display: inline-flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle); }
-		.btn-group-btn {
-			background: var(--bg-input); border: none; padding: 8px 14px; font-size: 12px;
-			color: var(--text-muted); cursor: pointer; font-weight: 600;
-		}
-		.btn-group-btn.active { background: var(--primary); color: #fff; }
-		.chart-canvas-box { position: relative; height: 380px; width: 100%; margin-bottom: 16px; }
-		.chart-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+		.chart-wrapper h3, .settings-card h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+		.chart-toolbar { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+		.chart-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+		.btn-group { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--bg-input); }
+		.btn-group-btn { background: transparent; border: none; padding: 9px 16px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; font-weight: 600; }
+		.btn-group-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+		.chart-canvas-box { position: relative; height: 400px; width: 100%; margin-bottom: 20px; }
+		.chart-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 		.stat-pill {
 			background: var(--bg-input); border: 1px solid var(--border-subtle);
-			padding: 12px 16px; border-radius: var(--radius-md); font-size: 12.5px;
-			display: flex; justify-content: space-between; align-items: center;
+			padding: 14px 18px; border-radius: var(--radius-md); font-size: 12.5px; color: var(--text-muted);
+			display: flex; justify-content: space-between; align-items: center; gap: 12px;
 		}
+		.stat-pill strong { color: var(--text-main); font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 
-		.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
-		.routing-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 18px; align-items: start; }
-		.routing-grid-left { display: flex; flex-direction: column; gap: 18px; }
+		.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
+		.routing-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; align-items: start; }
+		.routing-grid-left { display: flex; flex-direction: column; gap: 20px; }
 		@media (max-width: 960px) { .routing-grid { grid-template-columns: 1fr; } }
 
-		.form-group { margin-bottom: 10px; }
-		.form-label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 5px; font-weight: 600; }
-		.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-		.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-		@media (max-width: 600px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } }
+		.form-group { margin-bottom: 12px; }
+		.form-label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+		.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+		.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+		@media (max-width: 640px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } }
 
 		.switch-row {
-			background: var(--bg-input); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-md); padding: 12px 14px;
-			display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px;
+			background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+			padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 12px;
 		}
-		.switch-info strong { font-size: 13px; display: block; margin-bottom: 2px; }
-		.switch-info span { font-size: 11.5px; color: var(--text-muted); }
-		.toggle-switch { position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0; }
+		.switch-info strong { font-size: 13px; display: block; color: #f1f5f9; margin-bottom: 3px; font-weight: 600; }
+		.switch-info span { font-size: 11.5px; color: var(--text-muted); display: block; }
+		.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
 		.toggle-switch input { opacity: 0; width: 0; height: 0; }
-		.toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 22px; cursor: pointer; transition: 0.2s; }
-		.toggle-slider:before {
-			position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
-			background: #fff; border-radius: 50%; transition: 0.2s;
-		}
-		.toggle-switch input:checked + .toggle-slider { background: var(--primary); }
+		.toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 24px; cursor: pointer; transition: 0.2s; }
+		.toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+		.toggle-switch input:checked + .toggle-slider { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 		.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
 
 		.domains-list-box { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px; }
-		.domain-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; gap: 8px; border-bottom: 1px solid rgba(148,163,184,0.08); }
+		.domain-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; gap: 8px; border-bottom: 1px solid rgba(148,163,184,0.08); }
 		.domain-row:last-child { border-bottom: none; }
 		.domain-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #93c5fd; word-break: break-all; }
 
 		.modal-overlay {
 			display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
-			backdrop-filter: blur(6px); z-index: 1000; justify-content: center; align-items: center; padding: 14px;
+			backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; padding: 14px;
 		}
 		.modal-overlay.active { display: flex; }
 		.modal-card {
 			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-xl); padding: 24px; max-width: 460px; width: 100%;
-			box-shadow: var(--shadow-lg);
+			border-radius: var(--radius-xl); padding: 26px; max-width: 460px; width: 100%; box-shadow: var(--shadow-lg);
 		}
-		.modal-card h2 { font-size: 18px; margin-bottom: 6px; }
-		.modal-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
+		.modal-card h2 { font-size: 19px; margin-bottom: 6px; font-weight: 700; color: #fff; }
+		.modal-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
 
 		.toast {
-			position: fixed; bottom: 24px; right: 24px; background: var(--bg-card);
+			position: fixed; bottom: 30px; right: 30px; background: #1e293b;
 			border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-			padding: 12px 18px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg);
-			transform: translateY(20px); opacity: 0; transition: all 0.25s ease; z-index: 2000; pointer-events: none;
+			padding: 14px 20px; font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow-lg);
+			transform: translateY(20px); opacity: 0; transition: all 0.3s ease; z-index: 2000; pointer-events: none;
 		}
 		.toast.show { transform: translateY(0); opacity: 1; }
 		.toast.success { border-left: 4px solid var(--success); }
 		.toast.error { border-left: 4px solid var(--danger); }
 
+		@media (max-width: 1024px) { .hardware-bar { grid-template-columns: repeat(2, 1fr); } }
 		@media (max-width: 768px) {
-			.hardware-bar { grid-template-columns: repeat(2, 1fr); }
-			.chart-canvas-box { height: 260px; }
+			body { padding: 12px 10px 40px; }
+			.header { padding: 14px; border-radius: var(--radius-lg); }
+			.hardware-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+			.chart-canvas-box { height: 280px; }
 		}
 	</style>
 </head>
 <body>
 <div class="container">
 	<header class="header">
-		<div class="brand-text">
-			<h1>OpenVPN Dashboard</h1>
-			<p>Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
+		<div class="brand">
+			<div class="brand-text">
+				<h1>OpenVPN Dashboard</h1>
+				<p>Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
+			</div>
 		</div>
 		<div class="header-actions">
-			<button class="btn" id="themeToggleBtn" onclick="toggleTheme()"><span id="themeToggleIcon">☀️</span></button>
+			<button class="btn" id="themeToggleBtn" onclick="toggleTheme()" title="Сменить тему" style="padding:9px 12px;">
+				<span id="themeToggleIcon">☀️</span>
+			</button>
 			<select class="lang-select" id="langSelect" onchange="changeLanguage(this.value)">
 				<option value="ru">RU</option>
 				<option value="en">EN</option>
 			</select>
-			<button class="btn btn-primary" onclick="openCreateModal()">+ <span data-i18n="btn_create_client">Создать</span></button>
-			<button class="btn" onclick="openBackupModal()">📦 <span data-i18n="btn_backup">Бэкап</span></button>
-			<a href="/logout" class="btn btn-danger">🚪 <span data-i18n="btn_logout">Выйти</span></a>
+			<button class="btn btn-primary" onclick="openCreateModal()">
+				<span>+</span> <span data-i18n="btn_create_client">Создать</span>
+			</button>
+			<button class="btn" onclick="openBackupModal()">
+				<span>📦</span> <span data-i18n="btn_backup">Бэкап</span>
+			</button>
+			<a href="/logout" class="btn btn-danger">
+				<span>🚪</span> <span data-i18n="btn_logout">Выйти</span>
+			</a>
 		</div>
 	</header>
 
@@ -423,7 +805,7 @@ MAIN_HTML = """
 		<div class="banner-item"><span data-i18n="banner_endpoint">Сервер:</span><code id="bannerEndpointCode">{{ domain }}:{{ port }} ({{ proto }})</code></div>
 		<div class="banner-item"><span id="serverStatusText" class="status-badge active">● ...</span></div>
 		<div class="banner-item"><span data-i18n="banner_online">Онлайн:</span><strong id="activeClientsCount" style="color:var(--primary);">0 / 0</strong></div>
-		<div class="banner-item" style="color:var(--text-muted); font-size:12px;" id="lastSyncTime">—</div>
+		<div class="banner-item" style="color:var(--text-muted); font-size:12.5px;" id="lastSyncTime">—</div>
 	</div>
 
 	<div class="tabs-bar">
@@ -435,7 +817,6 @@ MAIN_HTML = """
 		<div class="tab-btn" onclick="switchTab('tab-settings')" data-i18n="tab_settings">🔐 Аккаунт</div>
 	</div>
 
-	<!-- ВКЛАДКА КЛИЕНТОВ -->
 	<div id="tab-clients" class="tab-view active">
 		<div class="filter-bar">
 			<div class="search-wrapper">
@@ -461,7 +842,7 @@ MAIN_HTML = """
 		</div>
 
 		<div class="clients-grid" id="clientsGrid">
-			<div style="grid-column: 1/-1; text-align:center; padding: 50px 20px; color:var(--text-muted);">⏳ Загрузка...</div>
+			<div style="grid-column: 1/-1; text-align:center; padding: 60px 20px; color:var(--text-muted);">⏳ Загрузка...</div>
 		</div>
 
 		<div class="pagination-bar" id="paginationBar" style="display:none;">
@@ -470,13 +851,12 @@ MAIN_HTML = """
 		</div>
 	</div>
 
-	<!-- ВКЛАДКА СКОРОСТИ -->
 	<div id="tab-speed" class="tab-view">
 		<div class="chart-wrapper">
 			<div class="chart-toolbar">
 				<div>
 					<h3>Мониторинг скорости в реальном времени</h3>
-					<p style="font-size:12px; color:var(--text-muted);">Прямой опрос сокета OpenVPN</p>
+					<p style="font-size:12.5px; color:var(--text-muted);">Прямой опрос сокета OpenVPN в памяти</p>
 				</div>
 				<div class="chart-controls">
 					<select class="control-select" id="chartClientFilter" onchange="renderChartData()">
@@ -502,19 +882,18 @@ MAIN_HTML = """
 			</div>
 			<div class="chart-canvas-box"><canvas id="speedChartCanvas"></canvas></div>
 			<div class="chart-stats">
-				<div class="stat-pill"><span>Download:</span> <strong id="liveTotalDown" style="color:#60a5fa;">0 B/s</strong></div>
-				<div class="stat-pill"><span>Upload:</span> <strong id="liveTotalUp" style="color:#34d399;">0 B/s</strong></div>
-				<div class="stat-pill"><span>Онлайн:</span> <strong id="liveActiveCount">0</strong></div>
+				<div class="stat-pill"><span>Текущий Download:</span> <strong id="liveTotalDown" style="color:#60a5fa;">0 B/s</strong></div>
+				<div class="stat-pill"><span>Текущий Upload:</span> <strong id="liveTotalUp" style="color:#34d399;">0 B/s</strong></div>
+				<div class="stat-pill"><span>Активных подключений:</span> <strong id="liveActiveCount">0</strong></div>
 			</div>
 		</div>
 	</div>
 
-	<!-- ВКЛАДКА ЛИМИТОВ СКОРОСТИ -->
 	<div id="tab-limits" class="tab-view">
 		<div class="settings-grid">
 			<div class="settings-card">
 				<h3>⚡ Двусторонний лимит скорости (tc + ifb0)</h3>
-				<p style="font-size:12.5px; color:var(--text-muted);">Ограничивает скорость в обе стороны (приём и отдача). 0 = без ограничения.</p>
+				<p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">Ограничение скорости в обе стороны (приём и отдача). 0 = без ограничения.</p>
 
 				<div class="form-group">
 					<label class="form-label">Режим ограничения</label>
@@ -526,12 +905,12 @@ MAIN_HTML = """
 					</select>
 				</div>
 
-				<div class="form-group" id="globalLimitBox">
+				<div class="form-group">
 					<label class="form-label">Общий лимит скорости (Кбит/с, напр. 5120 = 5 Мбит/с)</label>
 					<input type="number" min="0" step="64" class="search-input" id="globalSpeedLimitKbps" value="0" style="width:100%;">
 				</div>
 
-				<button class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
+				<button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
 			</div>
 
 			<div class="settings-card">
@@ -541,7 +920,6 @@ MAIN_HTML = """
 		</div>
 	</div>
 
-	<!-- ВКЛАДКА МАРШРУТИЗАЦИИ -->
 	<div id="tab-routing" class="tab-view">
 		<div class="routing-grid">
 			<div class="routing-grid-left">
@@ -554,14 +932,14 @@ MAIN_HTML = """
 						<span>Подсетей в ipset:</span><strong id="ipsetSubnetsCount" style="color:#60a5fa;">...</strong>
 					</div>
 
-					<div class="form-group" style="margin-top:8px;">
-						<input type="text" id="remoteServerIp" class="search-input" placeholder="IP удалённого сервера" style="width:100%; margin-bottom:8px;">
+					<div class="form-group" style="margin-top:10px;">
+						<input type="text" id="remoteServerIp" class="search-input" placeholder="IP удаленного сервера" style="width:100%; margin-bottom:8px;">
 						<input type="password" id="remoteServerPass" class="search-input" placeholder="Пароль root" style="width:100%; margin-bottom:8px;">
 						<button class="btn btn-success" style="width:100%; justify-content:center;" onclick="setupRemoteTunnel()">🚀 Настроить туннель</button>
 					</div>
 
 					<div class="switch-row">
-						<div class="switch-info"><strong>🚫 Блокировка BitTorrent</strong><span>Защита от абузов</span></div>
+						<div class="switch-info"><strong>🚫 Блокировка BitTorrent</strong><span>Защита от абузов и банов хостинга</span></div>
 						<label class="toggle-switch"><input type="checkbox" id="torrentBlockCheck"><span class="toggle-slider"></span></label>
 					</div>
 
@@ -583,7 +961,7 @@ MAIN_HTML = """
 						</select>
 					</div>
 
-					<div style="display:flex; gap:8px; flex-wrap:wrap;">
+					<div style="display:flex; gap:10px; flex-wrap:wrap;">
 						<button class="btn btn-primary" onclick="saveRoutingSettings()">💾 Сохранить</button>
 						<button class="btn" onclick="updateCidrIps()">🔄 Обновить CIDR</button>
 					</div>
@@ -591,81 +969,82 @@ MAIN_HTML = """
 			</div>
 
 			<div class="settings-card">
-				<h3>🛡️ DNS AdBlock (dnsmasq)</h3>
+				<h3>🛡️ Блокировка рекламы (DNS AdBlock / dnsmasq)</h3>
 				<div class="switch-row">
-					<div class="switch-info"><strong>Блокировка рекламы для всех клиентов</strong><span id="adblockStatusLabel">...</span></div>
+					<div class="switch-info"><strong>Включить блокировку рекламы для всех клиентов</strong><span id="adblockStatusLabel">...</span></div>
 					<label class="toggle-switch"><input type="checkbox" id="adblockEnableToggle" onchange="toggleAdblock(this.checked)"><span class="toggle-slider"></span></label>
 				</div>
 
 				<div class="form-row-2">
 					<div>
-						<label class="form-label">📋 Добавить AdList URL</label>
-						<div style="display:flex; gap:6px; margin-bottom:8px;">
+						<label class="form-label">📋 Добавить AdList по ссылке</label>
+						<div style="display:flex; gap:8px; margin-bottom:10px;">
 							<input type="text" id="adblockListUrl" class="search-input" placeholder="https://..." style="flex:1;">
 							<select class="control-select" id="adblockListType">
-								<option value="black">⚫ Black</option>
-								<option value="white">⚪ White</option>
+								<option value="black">⚫ Черный список</option>
+								<option value="white">⚪ Белый список</option>
 							</select>
-							<button class="btn btn-primary" onclick="addAdblockList()">+</button>
+							<button class="btn btn-primary" onclick="addAdblockList()">➕</button>
 						</div>
-						<div class="domains-list-box" id="adblockListsBox" style="max-height:320px; overflow-y:auto;"></div>
+						<div class="domains-list-box" id="adblockListsBox" style="max-height:340px; overflow-y:auto;"></div>
 					</div>
 
 					<div>
-						<label class="form-label">🌐 Добавить домен</label>
-						<div style="display:flex; gap:6px; margin-bottom:8px;">
+						<label class="form-label">🌐 Добавить отдельный домен</label>
+						<div style="display:flex; gap:8px; margin-bottom:10px;">
 							<input type="text" id="adblockDomainInput" class="search-input" placeholder="ads.example.com" style="flex:1;">
 							<select class="control-select" id="adblockDomainType">
-								<option value="black">⚫ Black</option>
-								<option value="white">⚪ White</option>
+								<option value="black">⚫ В черный</option>
+								<option value="white">⚪ В белый</option>
 							</select>
-							<button class="btn btn-primary" onclick="addAdblockDomain()">+</button>
+							<button class="btn btn-primary" onclick="addAdblockDomain()">➕</button>
 						</div>
-						<div class="domains-list-box" id="adblockDomainsBox" style="max-height:320px; overflow-y:auto;"></div>
+						<div class="domains-list-box" id="adblockDomainsBox" style="max-height:340px; overflow-y:auto;"></div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- ВКЛАДКА КОНФИГУРАЦИИ -->
 	<div id="tab-config" class="tab-view">
 		<div class="chart-wrapper">
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-				<h3>⚙️ server.conf</h3>
-				<div style="display:flex; gap:8px;">
+			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+				<div>
+					<h3>⚙️ Прямой редактор server.conf</h3>
+					<p style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">/etc/openvpn/server/server.conf</p>
+				</div>
+				<div style="display:flex; gap:8px; flex-wrap:wrap;">
 					<button class="btn" onclick="loadConfigView()">🔄 Перечитать</button>
-					<button class="btn btn-primary" onclick="saveRawConfig(true)">💾 Сохранить и рестарт</button>
+					<button class="btn btn-primary" onclick="saveRawConfig(true)">💾 Сохранить и перезапустить</button>
 				</div>
 			</div>
-			<textarea id="serverConfigText" class="textarea-input" rows="22" style="width:100%;"></textarea>
+			<textarea id="serverConfigText" class="textarea-input" rows="24" style="width:100%;"></textarea>
 		</div>
 	</div>
 
-	<!-- ВКЛАДКА АККАУНТА -->
 	<div id="tab-settings" class="tab-view">
 		<div class="settings-grid">
 			<div class="settings-card">
-				<h3>🔐 Учётная запись</h3>
-				<div class="form-group"><label class="form-label">Логин</label><input type="text" id="setAdminLogin" class="search-input" style="width:100%;"></div>
+				<h3>🔐 Учетная запись и Панель</h3>
+				<div class="form-group"><label class="form-label">Логин администратора</label><input type="text" id="setAdminLogin" class="search-input" style="width:100%;"></div>
 				<div class="form-group"><label class="form-label">Новый пароль</label><input type="password" id="setAdminPass" class="search-input" placeholder="••••••••" style="width:100%;"></div>
 				<div class="form-row-2">
 					<div class="form-group"><label class="form-label">Порт панели</label><input type="number" id="setPanelPort" class="search-input" style="width:100%;"></div>
-					<div class="form-group"><label class="form-label">Домен / IP</label><input type="text" id="setOvpnDomain" class="search-input" style="width:100%;"></div>
+					<div class="form-group"><label class="form-label">Домен / IP сервера</label><input type="text" id="setOvpnDomain" class="search-input" style="width:100%;"></div>
 				</div>
 			</div>
 
 			<div class="settings-card">
-				<h3>🎛️ Модули</h3>
-				<div class="switch-row"><div class="switch-info"><strong>📈 Мониторинг скорости</strong></div><label class="toggle-switch"><input type="checkbox" id="setEnableSpeed"><span class="toggle-slider"></span></label></div>
-				<div class="switch-row"><div class="switch-info"><strong>💻 Панель ресурсов</strong></div><label class="toggle-switch"><input type="checkbox" id="setEnableHwBar"><span class="toggle-slider"></span></label></div>
-				<div class="switch-row"><div class="switch-info"><strong>🚫 Блок BitTorrent</strong></div><label class="toggle-switch"><input type="checkbox" id="setTorrentBlock"><span class="toggle-slider"></span></label></div>
+				<h3>🎛️ Модули и функции</h3>
+				<div class="switch-row"><div class="switch-info"><strong>📈 Мониторинг скорости</strong><span>Живые графики скорости</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableSpeed"><span class="toggle-slider"></span></label></div>
+				<div class="switch-row"><div class="switch-info"><strong>💻 Панель ресурсов</strong><span>CPU / RAM / Disk / Ping</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableHwBar"><span class="toggle-slider"></span></label></div>
+				<div class="switch-row"><div class="switch-info"><strong>🚫 Блок BitTorrent</strong><span>iptables string match</span></div><label class="toggle-switch"><input type="checkbox" id="setTorrentBlock"><span class="toggle-slider"></span></label></div>
 			</div>
 
 			<div class="settings-card">
-				<h3>🛠️ Службы</h3>
-				<button class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:8px;" onclick="saveAllAccountSettings(false)">💾 Сохранить настройки</button>
-				<button class="btn btn-success" style="width:100%; justify-content:center; margin-bottom:12px;" onclick="saveAllAccountSettings(true)">🚀 Сохранить и перезапустить OVPN</button>
+				<h3>🛠️ Управление службами</h3>
+				<button class="btn btn-primary" style="width:100%; padding:12px; justify-content:center; margin-bottom:10px;" onclick="saveAllAccountSettings(false)">💾 Сохранить настройки</button>
+				<button class="btn btn-success" style="width:100%; padding:12px; justify-content:center; margin-bottom:14px;" onclick="saveAllAccountSettings(true)">🚀 Сохранить и перезапустить</button>
 				<div class="form-row-3">
 					<button class="btn" style="justify-content:center;" onclick="controlOvpnService('restart')">🔄 Рестарт</button>
 					<button class="btn btn-success" style="justify-content:center;" onclick="controlOvpnService('start')">▶️ Старт</button>
@@ -676,18 +1055,17 @@ MAIN_HTML = """
 	</div>
 </div>
 
-<!-- МОДАЛКИ -->
 <div class="modal-overlay" id="createModal">
 	<div class="modal-card">
 		<h2>➕ Новый клиент</h2>
-		<p>Латиница, цифры, дефис и подчёркивание.</p>
+		<p>Латиница, цифры, дефис и подчеркивание.</p>
 		<label class="form-label">Имя клиента</label>
-		<input type="text" id="newClientName" class="search-input" placeholder="iphone-user" style="width:100%; margin-bottom:10px;">
+		<input type="text" id="newClientName" class="search-input" placeholder="iphone-user" style="width:100%; margin-bottom:12px;">
 		<label class="form-label">Заметка</label>
-		<input type="text" id="newClientNote" class="search-input" placeholder="Например: Ноутбук" style="width:100%; margin-bottom:10px;">
+		<input type="text" id="newClientNote" class="search-input" placeholder="Например: Ноутбук" style="width:100%; margin-bottom:12px;">
 		<label class="form-label">Срок в днях (0 = ∞)</label>
-		<input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%; margin-bottom:16px;">
-		<div style="display:flex; gap:8px; justify-content:flex-end;">
+		<input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%; margin-bottom:18px;">
+		<div style="display:flex; gap:10px; justify-content:flex-end;">
 			<button class="btn" onclick="closeModals()">Отмена</button>
 			<button class="btn btn-primary" onclick="submitCreateClient()">Создать</button>
 		</div>
@@ -697,11 +1075,11 @@ MAIN_HTML = """
 <div class="modal-overlay" id="qrModal">
 	<div class="modal-card" style="text-align:center;">
 		<h2 id="qrModalTitle">📱 QR</h2>
-		<p>Отсканируйте камерой телефона</p>
-		<div style="background:#fff; padding:14px; border-radius:14px; display:inline-block; margin-bottom:14px;">
+		<p>Отсканируйте камерой телефона для скачивания .ovpn профиля</p>
+		<div style="background:#fff; padding:16px; border-radius:16px; display:inline-block; margin: 0 auto 16px;">
 			<canvas id="qrCanvas"></canvas>
 		</div>
-		<div style="display:flex; gap:8px;">
+		<div style="display:flex; gap:10px;">
 			<button class="btn btn-primary" style="flex:1; justify-content:center;" id="qrCopyBtn">🔗 Копировать</button>
 			<button class="btn" style="flex:1; justify-content:center;" onclick="closeModals()">Закрыть</button>
 		</div>
@@ -711,9 +1089,9 @@ MAIN_HTML = """
 <div class="modal-overlay" id="backupModal">
 	<div class="modal-card">
 		<h2>📦 Резервное копирование</h2>
-		<p>Архив конфигурации OpenVPN, WireGuard, dnsmasq и БД.</p>
-		<button class="btn" onclick="downloadBackupArchive()" style="width:100%; justify-content:center; padding:12px; margin-bottom:8px;">📥 Скачать архив</button>
-		<button class="btn btn-primary" onclick="document.getElementById('backupFileInput').click()" style="width:100%; justify-content:center; padding:12px; margin-bottom:12px;">📤 Восстановить из файла</button>
+		<p>Полный архив конфигурации.</p>
+		<button class="btn" onclick="downloadBackupArchive()" style="width:100%; padding:13px; justify-content:center; margin-bottom:10px;">📥 Скачать архив</button>
+		<button class="btn btn-primary" onclick="document.getElementById('backupFileInput').click()" style="width:100%; padding:13px; justify-content:center; margin-bottom:14px;">📤 Восстановить из файла</button>
 		<input type="file" id="backupFileInput" accept=".tar.gz" style="display:none;" onchange="processRestoreFile(event)">
 		<button class="btn" style="width:100%; justify-content:center;" onclick="closeModals()">Закрыть</button>
 	</div>
@@ -725,7 +1103,7 @@ MAIN_HTML = """
 let currentTheme = localStorage.getItem("ovpn_theme") || "dark";
 let currentLang = localStorage.getItem("ovpn_lang") || "ru";
 let panelConfig = { enable_speed_monitor: "1", enable_hardware_bar: "1", speed_limit_mode: "none", global_speed_limit_kbps: "0", selected_limit_clients: "[]" };
-let expandedClientName = null;
+let expandedClientsSet = new Set();
 let allClientsList = [];
 let currentPage = 1;
 let pageSize = parseInt(localStorage.getItem('ovpn_page_size')) || 20;
@@ -736,13 +1114,14 @@ let speedDataPoints = [];
 let latestLiveSpeeds = {};
 let clientColorRegistry = {};
 let paletteIdx = 0;
-const colorPalette = ['#3b82f6','#10b981','#f43f5e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16'];
+const colorPalette = ['#3b82f6','#10b981','#f43f5e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#6366f1','#14b8a6'];
 
 function applyTheme(theme) {
 	currentTheme = theme;
 	localStorage.setItem("ovpn_theme", theme);
 	document.documentElement.setAttribute("data-theme", theme);
-	document.getElementById("themeToggleIcon").textContent = theme === "light" ? "🌙" : "☀️";
+	const icon = document.getElementById("themeToggleIcon");
+	if (icon) icon.textContent = theme === "light" ? "🌙" : "☀️";
 }
 function toggleTheme() { applyTheme(currentTheme === "light" ? "dark" : "light"); }
 applyTheme(currentTheme);
@@ -765,7 +1144,7 @@ function copyToClipboard(text) {
 	const ta = document.createElement("textarea");
 	ta.value = text;
 	ta.style.position = "fixed";
-	ta.style.left = "-9999px";
+	ta.style.left = "-999999px";
 	document.body.appendChild(ta);
 	ta.focus(); ta.select();
 	return new Promise((res, rej) => { document.execCommand('copy') ? res() : rej(); ta.remove(); });
@@ -785,11 +1164,8 @@ function formatSpeed(bps) {
 	return v.toFixed(1) + ' ' + units[i];
 }
 
-// Отслеживание прогресса фоновых задач на слабом VPS
-let watchedTaskId = null;
 let taskPollTimer = null;
 function watchBackgroundTask(taskId, onDone) {
-	watchedTaskId = taskId;
 	const banner = document.getElementById('taskProgressBanner');
 	banner.classList.add('active');
 	if (taskPollTimer) clearInterval(taskPollTimer);
@@ -843,8 +1219,13 @@ function openCreateModal() {
 function openBackupModal() { document.getElementById('backupModal').classList.add('active'); }
 function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 
-function toggleClientExpand(name) {
-	expandedClientName = (expandedClientName === name) ? null : name;
+document.querySelectorAll('.modal-overlay').forEach(m => {
+	m.addEventListener('click', e => { if (e.target === m) closeModals(); });
+});
+
+function toggleCardExtra(name) {
+	if (expandedClientsSet.has(name)) expandedClientsSet.delete(name);
+	else expandedClientsSet.add(name);
 	applyClientFilter();
 }
 
@@ -880,16 +1261,18 @@ async function loadClients() {
 		const stEl = document.getElementById('serverStatusText');
 		stEl.textContent = isActive ? '● Сервер активен' : '● Остановлен';
 		stEl.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
+		if (data.server?.domain && data.server?.port) {
+			document.getElementById('bannerEndpointCode').textContent = `${data.server.domain}:${data.server.port} (${data.server.proto || 'udp'})`;
+		}
 
 		const validTotal = allClientsList.filter(c => c.status === 'valid').length;
 		const online = allClientsList.filter(c => c.is_online).length;
 		document.getElementById('activeClientsCount').textContent = `${online} / ${validTotal}`;
 		document.getElementById('lastSyncTime').textContent = `Обновлено: ${new Date().toLocaleTimeString()}`;
 
-		applyClientFilter();
-		if (document.getElementById('tab-limits')?.classList.contains('active')) {
-			renderSpeedLimitsEditor();
-		}
+		const isModalActive = document.querySelector('.modal-overlay.active') !== null;
+		if (!isModalActive) applyClientFilter();
+		if (document.getElementById('tab-limits')?.classList.contains('active')) renderSpeedLimitsEditor();
 	} catch (e) {}
 }
 
@@ -943,55 +1326,83 @@ function renderPagination(totalItems, startIdx, countOnPage, totalPages) {
 function renderClientsGrid(clients) {
 	const grid = document.getElementById('clientsGrid');
 	if (!clients || clients.length === 0) {
-		grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-muted);">Список клиентов пуст</div>`;
+		grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px 20px; color:var(--text-muted); font-size:14px;">Список клиентов пуст</div>`;
 		return;
 	}
 
+	const speedOn = panelConfig.enable_speed_monitor === "1";
+
 	grid.innerHTML = clients.map(c => {
-		const isExpanded = expandedClientName === c.name;
-		const statusText = c.status === 'revoked' ? 'ОТОЗВАН' : (c.is_paused ? 'ПАУЗА' : (c.is_online ? 'ОНЛАЙН' : 'ОФЛАЙН'));
-		const badgeCls = c.status === 'revoked' ? 'revoked' : (c.is_paused ? 'paused' : 'valid');
+		const isOnline = c.is_online;
+		const isPaused = c.is_paused;
+		const isExpanded = expandedClientsSet.has(c.name);
+
+		const onlineHtml = isPaused
+			? `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`
+			: (isOnline
+				? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>`
+				: `<span style="color:var(--text-muted);">⚪ Офлайн</span>`);
+
+		const statusLabel = c.status === 'revoked' ? 'ОТОЗВАН' : (isPaused ? 'НА ПАУЗЕ' : 'АКТИВЕН');
+		const badgeCls = c.status === 'revoked' ? 'revoked' : (isPaused ? 'paused' : 'valid');
+
+		const downColor = isOnline ? '#60a5fa' : 'var(--text-muted)';
+		const upColor = isOnline ? '#34d399' : 'var(--text-muted)';
+		const noteHtml = c.note ? `<div class="client-note" title="${c.note}">💬 ${c.note}</div>` : '';
+
+		const speedRowHtml = speedOn ? `
+			<div class="live-speed-row">
+				<span id="card-down-${c.name}" style="color:${downColor};">↓ ${c.speed_down_fmt || '0 B/s'}</span>
+				<span id="card-up-${c.name}" style="color:${upColor};">↑ ${c.speed_up_fmt || '0 B/s'}</span>
+			</div>
+		` : '';
 
 		const actionsHtml = c.status === 'valid'
 			? `
-				<button class="btn btn-sm" onclick="event.stopPropagation(); showQrModal('${c.name}', '${c.share_token}')">📱</button>
-				<button class="btn btn-sm" onclick="event.stopPropagation(); copyShareUrl('${c.share_token}')">🔗</button>
-				<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); downloadClientConfig('${c.name}')">⬇️</button>
-				<button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); togglePauseClient('${c.name}')">${c.is_paused ? '▶' : '⏸'}</button>
-				<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); revokeClient('${c.name}', false)">🚫</button>
+				<button class="btn btn-sm" onclick="showQrModal('${c.name}', '${c.share_token}')" title="QR-код">📱</button>
+				<button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')">🔗</button>
+				<button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${c.name}')" title="Скачать .ovpn">⬇️</button>
+				<button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${c.name}')">${isPaused ? '▶️' : '⏸️'}</button>
+				<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', false)" title="Отозвать">🚫</button>
 			`
-			: `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
+			: `<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
 
 		return `
-			<div class="client-card ${c.is_online ? 'online-card' : ''} ${c.is_paused ? 'paused-card' : ''} ${isExpanded ? 'expanded' : ''}" id="client-card-${c.name}">
-				<div class="card-summary" onclick="toggleClientExpand('${c.name}')">
-					<div class="card-main-info">
-						<div class="client-name-row">
-							<span class="client-name">${c.name}</span>
-							<span class="client-badge ${badgeCls}">${statusText}</span>
+			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''} ${isExpanded ? 'expanded' : ''}" id="client-card-${c.name}">
+				<div>
+					<div class="card-top">
+						<div class="client-name">${c.name}</div>
+						<div class="client-badge ${badgeCls}">${statusLabel}</div>
+					</div>
+					${noteHtml}
+					<div class="card-details">
+						<div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+							<span id="card-online-${c.name}">${onlineHtml}</span>
+							<span style="font-size:11px;">${c.created} → ${c.expires}</span>
 						</div>
-						<div class="client-subline">
-							${c.note ? `<span>💬 ${c.note}</span>` : ''}
-							${c.is_online ? `<span style="color:#60a5fa;">↓ ${c.speed_down_fmt}</span><span style="color:#34d399;">↑ ${c.speed_up_fmt}</span>` : ''}
+						<div class="session-meta ${isOnline ? '' : 'offline-meta'}" id="card-meta-${c.name}">
+							<div class="session-row">
+								<span>🌐 <strong id="card-ip-${c.name}">${isOnline ? c.real_ip : '—'}</strong></span>
+								<span>TUN: <strong id="card-tun-${c.name}">${isOnline ? c.virt_ip : '—'}</strong></span>
+							</div>
+							${speedRowHtml}
+						</div>
+						<button type="button" class="expand-toggle-btn" onclick="toggleCardExtra('${c.name}')">
+							${isExpanded ? '▲ Скрыть детали и даты' : '▼ Подробнее: даты и лимит'}
+						</button>
+						<div class="card-extra-info">
+							<div class="extra-line"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
+							<div class="extra-line"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
+							<div class="extra-line"><span>Лимит:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
 						</div>
 					</div>
-					<span class="expand-chevron">▼</span>
 				</div>
-
-				<div class="card-details-drawer">
-					<div class="detail-kv"><span>Real IP / TUN:</span><strong>${c.real_ip} / ${c.virt_ip}</strong></div>
-					<div class="detail-kv"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
-					<div class="detail-kv"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
-					<div class="detail-kv"><span>Срок:</span><strong>${c.created} → ${c.expires}</strong></div>
-					<div class="detail-kv"><span>Лимит:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
-					<div class="card-actions">${actionsHtml}</div>
-				</div>
+				<div class="card-actions">${actionsHtml}</div>
 			</div>
 		`;
 	}).join('');
 }
 
-// Лимиты скорости
 function renderSpeedLimitsEditor() {
 	const mode = document.getElementById('speedLimitMode')?.value || panelConfig.speed_limit_mode || 'none';
 	let selected = [];
@@ -1002,7 +1413,7 @@ function renderSpeedLimitsEditor() {
 	if (!box) return;
 	const validClients = allClientsList.filter(c => c.status === 'valid');
 	if (!validClients.length) {
-		box.innerHTML = `<div style="padding:18px; text-align:center; color:var(--text-muted);">Нет активных клиентов</div>`;
+		box.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Нет активных клиентов</div>`;
 		return;
 	}
 
@@ -1015,7 +1426,7 @@ function renderSpeedLimitsEditor() {
 					<input type="checkbox" class="limit-client-cb" data-client="${c.name}" ${checked} ${mode !== 'selected' ? 'disabled' : ''}>
 					<span style="font-weight:600; font-size:12.5px;">${c.name}</span>
 				</label>
-				<input type="number" min="0" step="64" class="search-input limit-per-client-input" data-client="${c.name}" value="${perVal}" placeholder="kbps" style="width:110px; padding:5px 8px; font-size:12px;" ${mode !== 'per_client' ? 'disabled' : ''}>
+				<input type="number" min="0" step="64" class="search-input limit-per-client-input" data-client="${c.name}" value="${perVal}" placeholder="kbps" style="width:115px; padding:6px 8px; font-size:12px;" ${mode !== 'per_client' ? 'disabled' : ''}>
 			</div>
 		`;
 	}).join('');
@@ -1032,8 +1443,7 @@ async function saveSpeedLimits() {
 
 	try {
 		const r = await fetch('/api/speed-limits', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			method: 'POST', headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				speed_limit_mode: mode,
 				global_speed_limit_kbps: globalKbps,
@@ -1054,7 +1464,6 @@ async function saveSpeedLimits() {
 	} catch (e) { showToast('❌ Ошибка сети', 'error'); }
 }
 
-// График скорости
 function initSpeedChart() {
 	const ctx = document.getElementById('speedChartCanvas').getContext('2d');
 	speedChart = new Chart(ctx, {
@@ -1069,7 +1478,14 @@ function initSpeedChart() {
 		}
 	});
 }
-function setWindowTime(sec) { selectedWindowSeconds = sec; fetchHistoryAndSync(); }
+function setWindowTime(sec) {
+	selectedWindowSeconds = sec;
+	document.querySelectorAll('.btn-group-btn').forEach(b => b.classList.remove('active'));
+	if (sec === 30) document.getElementById('btnWin30').classList.add('active');
+	if (sec === 60) document.getElementById('btnWin60').classList.add('active');
+	if (sec === 300) document.getElementById('btnWin300').classList.add('active');
+	fetchHistoryAndSync();
+}
 async function fetchHistoryAndSync() {
 	try {
 		const r = await fetch(`/api/clients/speeds/history?seconds=${selectedWindowSeconds}`);
@@ -1130,7 +1546,6 @@ async function pollSystemStats() {
 	} catch (e) {}
 }
 
-// Действия с клиентами и настройками
 async function submitCreateClient() {
 	const name = document.getElementById('newClientName').value.trim();
 	const note = document.getElementById('newClientNote').value.trim();
@@ -1148,7 +1563,7 @@ async function togglePauseClient(name) {
 	if (d.success) { showToast(d.is_paused ? '⏸️ На паузе' : '▶️ Активен'); loadClients(); }
 }
 async function revokeClient(name, permanent) {
-	if (!confirm(permanent ? `Удалить ${name} навсегда?` : `Отозвать сертификат ${name}?`)) return;
+	if (!confirm(permanent ? `Удалить клиента ${name} навсегда?` : `Отозвать сертификат ${name}?`)) return;
 	const r = await fetch(`/api/clients/${encodeURIComponent(name)}?permanent=${permanent}`, { method: 'DELETE' });
 	const d = await r.json();
 	if (d.success) { showToast('✅ Готово'); loadClients(); }
@@ -1162,7 +1577,7 @@ function copyShareUrl(token) {
 function showQrModal(name, token) {
 	const link = `${location.origin}/d/${encodeURIComponent(token)}`;
 	document.getElementById('qrModalTitle').textContent = `📱 ${name}`;
-	new QRious({ element: document.getElementById('qrCanvas'), value: link, size: 200, level: 'M' });
+	new QRious({ element: document.getElementById('qrCanvas'), value: link, size: 220, level: 'M' });
 	document.getElementById('qrCopyBtn').onclick = () => copyToClipboard(link).then(() => showToast('✅ Скопировано'));
 	document.getElementById('qrModal').classList.add('active');
 }
@@ -1175,6 +1590,7 @@ async function loadRoutingView() {
 	document.getElementById('customCidrsInput').value = d.custom_cidrs || '';
 	document.getElementById('routingModeSelect').value = d.routing_mode || 'off';
 	document.getElementById('wgText').textContent = d.wg_up ? 'АКТИВЕН' : 'ОТКЛЮЧЕН';
+	document.getElementById('wgText').style.color = d.wg_up ? 'var(--success)' : 'var(--danger)';
 	document.getElementById('torrentBlockCheck').checked = Boolean(d.torrent_block);
 	await loadAdblockStatus();
 }
@@ -1189,7 +1605,7 @@ async function saveRoutingSettings() {
 		})
 	});
 	const d = await r.json();
-	if (d.success) { showToast('✅ Сохранено'); loadRoutingView(); }
+	if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
 }
 async function updateCidrIps() {
 	const r = await fetch('/api/routing/update_ips', { method: 'POST' });
@@ -1211,13 +1627,13 @@ async function loadAdblockStatus() {
 	if (!j.success) return;
 	const d = j.data;
 	document.getElementById('adblockEnableToggle').checked = Boolean(d.enabled);
-	document.getElementById('adblockStatusLabel').textContent = `Статус: ${d.enabled ? '🟢 АКТИВЕН' : '⚪ ОТКЛЮЧЕН'} | Правил: ${d.blocked_total}`;
+	document.getElementById('adblockStatusLabel').textContent = `Статус: ${d.enabled ? '🟢 АКТИВЕН' : '⚪ ОТКЛЮЧЕН'} | Правил: ${(d.blocked_total || 0).toLocaleString()}`;
 	document.getElementById('adblockListsBox').innerHTML = (d.lists || []).map(l => `
 		<div class="domain-row"><span class="domain-name">${l.url} (${l.domains_count})</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockList(${l.id})">✕</button></div>
-	`).join('') || '<div style="padding:12px; color:var(--text-muted);">Списков нет</div>';
+	`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Списков нет</div>';
 	document.getElementById('adblockDomainsBox').innerHTML = (d.domains || []).map(dom => `
 		<div class="domain-row"><span class="domain-name">${dom.domain} [${dom.list_type}]</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockDomain(${dom.id})">✕</button></div>
-	`).join('') || '<div style="padding:12px; color:var(--text-muted);">Доменов нет</div>';
+	`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Доменов нет</div>';
 }
 async function toggleAdblock(enable) {
 	const r = await fetch('/api/adblock/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enable }) });
@@ -1310,6 +1726,7 @@ async function processRestoreFile(e) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+	document.getElementById('pageSizeSelect').value = String(pageSize);
 	initSpeedChart();
 	await loadSettingsView();
 	await loadClients();
@@ -1330,37 +1747,75 @@ LANDING_HTML = """
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>OpenVPN Profile — {client_name}</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
-			font-family: 'Plus Jakarta Sans', sans-serif; background: #090d16; color: #f1f5f9;
-			min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
+			font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+			background: #090d16; color: #f1f5f9; min-height: 100vh; display: flex;
+			justify-content: center; align-items: center; padding: 20px;
+		}
+		.background { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+		.blob {
+			position: absolute; width: 600px; height: 600px; border-radius: 50%;
+			background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 70%);
+			top: -150px; left: 50%; transform: translateX(-50%);
 		}
 		.card {
-			width: 100%; max-width: 420px; background: #0f172a; border: 1px solid #1e293b;
-			border-radius: 20px; padding: 32px 26px; text-align: center;
+			position: relative; width: 100%; max-width: 440px;
+			background: rgba(17, 24, 39, 0.9); backdrop-filter: blur(16px);
+			border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px;
+			padding: 36px 30px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+			text-align: center;
 		}
-		h1 { font-size: 20px; margin-bottom: 8px; word-break: break-all; }
-		p { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
-		.qr-box { background: #fff; padding: 14px; border-radius: 16px; display: inline-block; margin-bottom: 20px; }
+		.logo {
+			width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 16px;
+			background: linear-gradient(135deg, #3b82f6, #6366f1);
+			display: flex; align-items: center; justify-content: center; font-size: 32px;
+			box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+		}
+		h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; word-break: break-all; }
+		p { font-size: 13.5px; color: #94a3b8; margin-bottom: 24px; }
+		.qr-box {
+			background: #fff; padding: 16px; border-radius: 20px; display: inline-block;
+			margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+		}
 		.btn {
-			width: 100%; padding: 13px; background: linear-gradient(135deg, #3b82f6, #2563eb);
-			border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600;
-			text-decoration: none; display: inline-flex; justify-content: center; margin-bottom: 10px;
+			width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb);
+			border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600;
+			cursor: pointer; transition: all .2s; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+			text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+			margin-bottom: 10px;
 		}
+		.btn:hover { opacity: .95; transform: translateY(-1px); }
+		.btn-outline {
+			background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: none; color: #f8fafc;
+		}
+		.notice { font-size: 12px; color: #94a3b8; margin-top: 14px; line-height: 1.4; }
 	</style>
 </head>
 <body>
+<div class="background"><div class="blob"></div></div>
 <div class="card">
+	<div class="logo">🛡️</div>
 	<h1>{client_name}</h1>
-	<p>Скачайте профиль и откройте его в OpenVPN Connect</p>
+	<p>Скачайте файл профиля и откройте его в приложении OpenVPN Connect</p>
 	<div class="qr-box"><canvas id="qrCanvas"></canvas></div>
 	<a href="/d/{token}/raw" class="btn">⬇️ Скачать .ovpn профиль</a>
+	<div id="importBtnBox"></div>
+	<div class="notice">
+		Подсказка: на телефоне нажмите <b>«Скачать .ovpn»</b> и выберите <i>«Открыть с помощью OpenVPN»</i>.
+	</div>
 </div>
 <script>
-	new QRious({ element: document.getElementById('qrCanvas'), value: window.location.href, size: 190, level: 'M' });
+	new QRious({ element: document.getElementById('qrCanvas'), value: window.location.href, size: 200, level: 'M' });
+	if (window.location.protocol === 'https:') {
+		document.getElementById('importBtnBox').innerHTML = '<a href="openvpn://import-profile/{raw_url}" class="btn btn-outline">⚡ Авто-импорт в OpenVPN</a>';
+	}
 </script>
 </body>
 </html>
