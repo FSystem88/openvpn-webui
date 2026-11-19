@@ -11,11 +11,25 @@ fi
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_CONF="/etc/openvpn/server/server.conf"
+LEGACY_SERVER_CONF="/etc/openvpn/server.conf"
 DB_PATH="/etc/openvpn/panel.db"
+
+# Проверка наличия всех модулей панели
+REQUIRED_FILES=("panel.py" "database.py" "openvpn_manager.py" "network_manager.py" "ui_templates.py" "requirements.txt")
+for f in "${REQUIRED_FILES[@]}"; do
+	if [[ ! -f "$REPO_DIR/$f" ]]; then
+		echo "[-] Ошибка: Не найден обязательный файл $REPO_DIR/$f"
+		exit 1
+	fi
+done
 
 # ============================================================
 # Вспомогательные функции
 # ============================================================
+
+generate_random_password() {
+	python3 -c 'import secrets, string; alphabet = string.ascii_letters + string.digits; print("".join(secrets.choice(alphabet) for _ in range(14)))'
+}
 
 # Создание безопасного scrypt-хэша с солью
 hash_password() {
@@ -29,18 +43,37 @@ print(f"scrypt${salt.hex()}${derived.hex()}")
 '
 }
 
-# Принудительная запись логина/хэша в SQLite базу
+# Принудительная запись логина/хэша и базовых параметров в SQLite базу
 sync_db_credentials() {
 	local login="$1"
 	local hash="$2"
+	local domain="$3"
+	local port="$4"
+	local proto="$5"
+	local p_port="$6"
 	if [[ -f "$DB_PATH" ]]; then
-		ADMIN_LOGIN_ARG="$login" ADMIN_HASH_ARG="$hash" python3 -c '
+		ADMIN_LOGIN_ARG="$login" \
+		ADMIN_HASH_ARG="$hash" \
+		OVPN_DOMAIN_ARG="$domain" \
+		OVPN_PORT_ARG="$port" \
+		OVPN_PROTO_ARG="$proto" \
+		PANEL_PORT_ARG="$p_port" \
+		python3 -c '
 import os, sqlite3
 conn = sqlite3.connect("/etc/openvpn/panel.db")
 cur = conn.cursor()
 cur.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
-cur.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", ("admin_login", os.environ["ADMIN_LOGIN_ARG"]))
-cur.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", ("admin_password_hash", os.environ["ADMIN_HASH_ARG"]))
+pairs = [
+    ("admin_login", os.environ["ADMIN_LOGIN_ARG"]),
+    ("admin_password_hash", os.environ["ADMIN_HASH_ARG"]),
+    ("ovpn_domain", os.environ["OVPN_DOMAIN_ARG"]),
+    ("ovpn_port", os.environ["OVPN_PORT_ARG"]),
+    ("ovpn_proto", os.environ["OVPN_PROTO_ARG"]),
+    ("panel_port", os.environ["PANEL_PORT_ARG"]),
+]
+for k, v in pairs:
+    if v:
+        cur.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (k, v))
 conn.commit()
 conn.close()
 '
@@ -54,7 +87,7 @@ create_backup() {
 	local backup_file="/root/openvpn_backup_${date_str}.tar.gz"
 	echo ""
 	echo "[*] Создание резервной копии перед операцией..."
-	
+
 	local temp_backup_dir
 	temp_backup_dir=$(mktemp -d)
 	local target_dir="$temp_backup_dir/backup_data"
@@ -66,7 +99,6 @@ create_backup() {
 	[[ -f "$REPO_DIR/.env" ]] && cp "$REPO_DIR/.env" "$target_dir/.env"
 	[[ -f "$DB_PATH" ]] && cp "$DB_PATH" "$target_dir/panel.db"
 
-	# Архивация с единой структурой backup_data/
 	tar -czf "$backup_file" -C "$temp_backup_dir" backup_data
 	rm -rf "$temp_backup_dir"
 
@@ -89,10 +121,12 @@ uninstall_panel_only() {
 	rm -f /etc/systemd/system/openvpn-webui.service
 	systemctl daemon-reload
 
-	echo "[*] Очистка окружения веб-панели..."
+	echo "[*] Очистка правил шейпинга tc и окружения веб-панели..."
+	tc qdisc del dev tun0 root 2>/dev/null || true
+	tc qdisc del dev tun0 ingress 2>/dev/null || true
+	tc qdisc del dev ifb0 root 2>/dev/null || true
 	rm -rf "$REPO_DIR/venv" "$REPO_DIR/.env" "$DB_PATH"
 
-	# Удаление правил iptables блокировки торрентов и редиректа DNS
 	iptables -t nat -D PREROUTING -i tun0 -p udp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
 	iptables -t nat -D PREROUTING -i tun0 -p tcp --dport 53 -j REDIRECT --to-ports 53 2>/dev/null || true
 
@@ -119,6 +153,9 @@ uninstall_full() {
 	systemctl daemon-reload
 
 	echo "[*] Удаление конфигураций и баз данных..."
+	tc qdisc del dev tun0 root 2>/dev/null || true
+	tc qdisc del dev tun0 ingress 2>/dev/null || true
+	tc qdisc del dev ifb0 root 2>/dev/null || true
 	rm -rf /etc/openvpn
 	rm -rf /etc/wireguard
 	rm -f /etc/dnsmasq.d/00-ovpn-base.conf
@@ -148,20 +185,18 @@ reset_password_menu() {
 
 	read -rp "Новый пароль [Enter для автогенерации]: " NEW_PASS
 	if [[ -z "$NEW_PASS" ]]; then
-		NEW_PASS=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
+		NEW_PASS=$(generate_random_password)
 	fi
 
 	local new_hash
 	new_hash=$(hash_password "$NEW_PASS")
 
-	# Обновление в .env
 	if [[ -f "$REPO_DIR/.env" ]]; then
 		sed -i "s|^ADMIN_LOGIN=.*|ADMIN_LOGIN=$NEW_LOGIN|" "$REPO_DIR/.env"
 		sed -i "s|^ADMIN_PASSWORD_HASH=.*|ADMIN_PASSWORD_HASH=$new_hash|" "$REPO_DIR/.env"
 	fi
 
-	# Обновление напрямую в SQLite
-	sync_db_credentials "$NEW_LOGIN" "$new_hash"
+	sync_db_credentials "$NEW_LOGIN" "$new_hash" "" "" "" ""
 
 	systemctl restart openvpn-webui.service 2>/dev/null || true
 
@@ -180,7 +215,7 @@ echo "=================================================="
 echo "    Управление OpenVPN & Web UI                  "
 echo "=================================================="
 
-if [[ -f "$SERVER_CONF" || -f "/etc/systemd/system/openvpn-webui.service" ]]; then
+if [[ -f "$SERVER_CONF" || -f "$LEGACY_SERVER_CONF" || -f "/etc/systemd/system/openvpn-webui.service" ]]; then
 	echo "Обнаружены установленные компоненты."
 	echo "1) Установить / Обновить Web UI"
 	echo "2) Сбросить пароль администратора Web UI"
@@ -201,26 +236,36 @@ if [[ -f "$SERVER_CONF" || -f "/etc/systemd/system/openvpn-webui.service" ]]; th
 fi
 
 # ============================================================
-# ПРОЦЕСС УСТАНОВКИ
+# ПРОЦЕСС УСТАНОВКИ / ОБНОВЛЕНИЯ
 # ============================================================
+
+if [[ -f "$SERVER_CONF" || -f "$DB_PATH" ]]; then
+	create_backup
+fi
 
 echo "[*] Обновление пакетов и установка системных зависимостей..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-	python3 python3-pip python3-venv iptables ipset curl wget tar dnsmasq openssl
+	python3 python3-pip python3-venv iptables ipset iproute2 curl wget tar dnsmasq openssl
 
 SERVER_IP=$(curl -s4 https://api.ipify.org || curl -s4 https://ifconfig.me || ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
 
 INSTALL_OVPN=true
 if [[ -f "$SERVER_CONF" ]]; then
-	CURRENT_PORT=$(grep -E '^\s*port\s+' "$SERVER_CONF" | awk '{print $2}' || echo "1984")
-	CURRENT_PROTO=$(grep -E '^\s*proto\s+' "$SERVER_CONF" | awk '{print $2}' || echo "udp")
-	CURRENT_SUBNET=$(grep -E '^\s*server\s+' "$SERVER_CONF" | awk '{print $2, $3}' || echo "10.8.0.0 255.255.255.0")
+	CURRENT_PORT=$(grep -E '^\s*port\s+' "$SERVER_CONF" | awk '{print $2}' | head -n1 || echo "1984")
+	CURRENT_PROTO=$(grep -E '^\s*proto\s+' "$SERVER_CONF" | awk '{print $2}' | head -n1 || echo "udp")
+	CURRENT_SUBNET=$(grep -E '^\s*server\s+' "$SERVER_CONF" | awk '{print $2, $3}' | head -n1 || echo "10.8.0.0 255.255.255.0")
 
 	echo "[!] Обнаружен существующий OpenVPN сервер ($CURRENT_PROTO:$CURRENT_PORT, $CURRENT_SUBNET)."
+	echo "[*] Существующая конфигурация и сертификаты OpenVPN будут сохранены без изменений."
 	INSTALL_OVPN=false
 	OVPN_PORT="$CURRENT_PORT"
 	OVPN_PROTO="$CURRENT_PROTO"
+elif [[ -f "$LEGACY_SERVER_CONF" ]]; then
+	echo "[!] Обнаружена нестандартная установка OpenVPN ($LEGACY_SERVER_CONF)."
+	echo "[-] Чтобы не повредить существующий сервер, автоматическая установка Nyr пропущена."
+	echo "    Панель работает со структурой /etc/openvpn/server/server.conf."
+	exit 1
 else
 	echo "[?] OpenVPN сервер не обнаружен."
 	read -rp "Установить OpenVPN сервер скриптом Nyr? [Y/n]: " PROCEED_INSTALL
@@ -287,12 +332,20 @@ ADMIN_LOGIN=${ADMIN_LOGIN:-admin}
 
 read -rp "Пароль администратора [Enter для автогенерации]: " ADMIN_PASSWORD
 if [[ -z "$ADMIN_PASSWORD" ]]; then
-	ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
+	ADMIN_PASSWORD=$(generate_random_password)
 fi
 
 ADMIN_PASSWORD_HASH=$(hash_password "$ADMIN_PASSWORD")
-SECRET_KEY=$(openssl rand -hex 32)
-SESSION_SECRET=$(openssl rand -hex 32)
+
+# Сохраняем старые SECRET_KEY и SESSION_SECRET при обновлении, чтобы не сбрасывать ссылки и сессии
+OLD_SECRET_KEY=""
+OLD_SESSION_SECRET=""
+if [[ -f "$REPO_DIR/.env" ]]; then
+	OLD_SECRET_KEY=$(grep -E '^SECRET_KEY=' "$REPO_DIR/.env" | cut -d'=' -f2- || true)
+	OLD_SESSION_SECRET=$(grep -E '^SESSION_SECRET=' "$REPO_DIR/.env" | cut -d'=' -f2- || true)
+fi
+SECRET_KEY=${OLD_SECRET_KEY:-$(openssl rand -hex 32)}
+SESSION_SECRET=${OLD_SESSION_SECRET:-$(openssl rand -hex 32)}
 
 # Установка OpenVPN через Nyr с корректным распознаванием NAT
 if [[ "$INSTALL_OVPN" == "true" ]]; then
@@ -352,6 +405,7 @@ OVPN_PORT=$OVPN_PORT
 OVPN_PROTO=$OVPN_PROTO
 PANEL_PORT=$PANEL_PORT
 OVPN_TUN_IFACE=tun0
+OVPN_IFB_IFACE=ifb0
 
 ADMIN_LOGIN=$ADMIN_LOGIN
 ADMIN_PASSWORD_HASH=$ADMIN_PASSWORD_HASH
@@ -366,7 +420,7 @@ EOF
 chmod 600 "$REPO_DIR/.env"
 
 # Принудительная синхронизация с базой SQLite (если она уже была создана ранее)
-sync_db_credentials "$ADMIN_LOGIN" "$ADMIN_PASSWORD_HASH"
+sync_db_credentials "$ADMIN_LOGIN" "$ADMIN_PASSWORD_HASH" "$OVPN_DOMAIN" "$OVPN_PORT" "$OVPN_PROTO" "$PANEL_PORT"
 
 # Открытие порта в UFW
 if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
