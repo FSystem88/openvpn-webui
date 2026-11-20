@@ -77,7 +77,7 @@ LOGIN_HTML = """
 </html>
 """
 
-MAIN_HTML = """
+MAIN_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -106,6 +106,8 @@ MAIN_HTML = """
 			--success: #10b981;
 			--danger: #ef4444;
 			--warning: #f59e0b;
+			--purple: #8b5cf6;
+			--cyan: #06b6d4;
 			--radius-sm: 8px;
 			--radius-md: 12px;
 			--radius-lg: 16px;
@@ -518,7 +520,6 @@ MAIN_HTML = """
 		}
 		.textarea-input { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 12.5px; line-height: 1.6; resize: vertical; }
 
-		/* Полноценные карточки клиентов + аккуратное раскрытие доп. деталей */
 		.clients-grid {
 			display: grid;
 			grid-template-columns: repeat(4, 1fr);
@@ -614,33 +615,33 @@ MAIN_HTML = """
 			font-family: 'JetBrains Mono', monospace;
 			font-size: 11.5px;
 		}
-
-		.expand-toggle-btn {
-			width: 100%;
-			margin-top: 6px;
-			padding: 5px 8px;
+		.card-traffic {
 			background: var(--bg-input);
-			border: 1px dashed var(--border-subtle);
-			border-radius: 6px;
-			color: var(--text-muted);
-			font-size: 11px;
-			font-weight: 600;
-			cursor: pointer;
-		}
-		.expand-toggle-btn:hover { color: var(--text-main); border-color: var(--primary); }
-		.card-extra-info {
-			display: none;
+			border: 1px solid var(--border-subtle);
+			padding: 9px 11px;
+			border-radius: var(--radius-sm);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
 			margin-top: 8px;
-			padding: 8px 10px;
+			font-size: 12px;
+			gap: 8px;
+		}
+		.traffic-main { font-weight: 600; color: var(--text-main); }
+		.traffic-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+
+		.card-extra-meta {
+			margin-top: 8px;
+			padding: 7px 10px;
 			background: var(--bg-input);
+			border: 1px solid var(--border-subtle);
 			border-radius: 8px;
 			font-size: 11px;
 			color: var(--text-dim);
 		}
-		.client-card.expanded .card-extra-info { display: block; }
-		.extra-line { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
-		.extra-line:last-child { margin-bottom: 0; }
-		.extra-line strong { font-family: 'JetBrains Mono', monospace; color: var(--text-main); }
+		.card-extra-line { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 3px; }
+		.card-extra-line:last-child { margin-bottom: 0; }
+		.card-extra-line strong { font-family: 'JetBrains Mono', monospace; color: var(--text-main); }
 
 		.card-actions {
 			display: flex;
@@ -762,7 +763,7 @@ MAIN_HTML = """
 		<div class="brand">
 			<div class="brand-text">
 				<h1>OpenVPN Dashboard</h1>
-				<p>Control Center by <a href="https://github.com/FSystem88" style="color: var(--text-muted);">FSystem88</a></p>
+				<p>Control Center & Analytics</p>
 			</div>
 		</div>
 		<div class="header-actions">
@@ -774,13 +775,13 @@ MAIN_HTML = """
 				<option value="en">EN</option>
 			</select>
 			<button class="btn btn-primary" onclick="openCreateModal()">
-				<span>+</span> <span data-i18n="btn_create_client">Создать</span>
+				<span>+</span> <span>Создать</span>
 			</button>
 			<button class="btn" onclick="openBackupModal()">
-				<span>📦</span> <span data-i18n="btn_backup">Бэкап</span>
+				<span>📦</span> <span>Бэкап</span>
 			</button>
 			<a href="/logout" class="btn btn-danger">
-				<span>🚪</span> <span data-i18n="btn_logout">Выйти</span>
+				<span>🚪</span> <span>Выйти</span>
 			</a>
 		</div>
 	</header>
@@ -802,19 +803,19 @@ MAIN_HTML = """
 	</div>
 
 	<div class="status-banner">
-		<div class="banner-item"><span data-i18n="banner_endpoint">Сервер:</span><code id="bannerEndpointCode">{{ domain }}:{{ port }} ({{ proto }})</code></div>
+		<div class="banner-item"><span>Сервер:</span><code id="bannerEndpointCode">{{ domain }}:{{ port }} ({{ proto }})</code></div>
 		<div class="banner-item"><span id="serverStatusText" class="status-badge active">● ...</span></div>
-		<div class="banner-item"><span data-i18n="banner_online">Онлайн:</span><strong id="activeClientsCount" style="color:var(--primary);">0 / 0</strong></div>
+		<div class="banner-item"><span>Онлайн:</span><strong id="activeClientsCount" style="color:var(--primary);">0 / 0</strong></div>
 		<div class="banner-item" style="color:var(--text-muted); font-size:12.5px;" id="lastSyncTime">—</div>
 	</div>
 
 	<div class="tabs-bar">
-		<div class="tab-btn active" onclick="switchTab('tab-clients')" data-i18n="tab_clients">👥 Клиенты</div>
-		<div class="tab-btn" id="tabBtnSpeed" onclick="switchTab('tab-speed')" data-i18n="tab_speed">📈 Скорость</div>
-		<div class="tab-btn" onclick="switchTab('tab-limits')" data-i18n="tab_limits">⚡ Лимиты</div>
-		<div class="tab-btn" onclick="switchTab('tab-routing')" data-i18n="tab_routing">🔀 Маршрутизация</div>
-		<div class="tab-btn" onclick="switchTab('tab-config')" data-i18n="tab_config">⚙️ Конфигурация</div>
-		<div class="tab-btn" onclick="switchTab('tab-settings')" data-i18n="tab_settings">🔐 Аккаунт</div>
+		<div class="tab-btn active" onclick="switchTab('tab-clients')">👥 Клиенты</div>
+		<div class="tab-btn" id="tabBtnSpeed" onclick="switchTab('tab-speed')">📈 Скорость</div>
+		<div class="tab-btn" onclick="switchTab('tab-limits')">⚡ Лимиты</div>
+		<div class="tab-btn" onclick="switchTab('tab-routing')">🔀 Маршрутизация</div>
+		<div class="tab-btn" onclick="switchTab('tab-config')">⚙️ Конфигурация</div>
+		<div class="tab-btn" onclick="switchTab('tab-settings')">🔐 Аккаунт</div>
 	</div>
 
 	<div id="tab-clients" class="tab-view active">
@@ -893,7 +894,7 @@ MAIN_HTML = """
 		<div class="settings-grid">
 			<div class="settings-card">
 				<h3>⚡ Двусторонний лимит скорости (tc + ifb0)</h3>
-				<p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">Ограничение скорости в обе стороны (приём и отдача). 0 = без ограничения.</p>
+				<p style="font-size:12.5px; color:var(--text-muted);">Ограничение скорости в обе стороны (приём и отдача). 0 = без ограничения.</p>
 
 				<div class="form-group">
 					<label class="form-label">Режим ограничения</label>
@@ -910,7 +911,7 @@ MAIN_HTML = """
 					<input type="number" min="0" step="64" class="search-input" id="globalSpeedLimitKbps" value="0" style="width:100%;">
 				</div>
 
-				<button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
+				<button class="btn btn-primary" style="width:100%; padding:12px; justify-content:center;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
 			</div>
 
 			<div class="settings-card">
@@ -925,14 +926,12 @@ MAIN_HTML = """
 			<div class="routing-grid-left">
 				<div class="settings-card">
 					<h3>Сплит-туннель (WireGuard + ipset)</h3>
-					<div style="display:flex; justify-content:space-between; padding:8px 0; font-size:13px;">
-						<span>Статус WG0:</span><strong id="wgText">...</strong>
-					</div>
-					<div style="display:flex; justify-content:space-between; padding:8px 0; font-size:13px;">
-						<span>Подсетей в ipset:</span><strong id="ipsetSubnetsCount" style="color:#60a5fa;">...</strong>
-					</div>
+					<p class="card-desc">Маршрутизация через второй VPN-сервер</p>
 
-					<div class="form-group" style="margin-top:10px;">
+					<div class="wg-status-row"><span>Статус WG0:</span><strong id="wgText">...</strong></div>
+					<div class="wg-status-row"><span>Подсетей в ipset:</span><strong id="ipsetSubnetsCount" style="color:#60a5fa;">...</strong></div>
+
+					<div class="form-group" style="margin-top:6px;">
 						<input type="text" id="remoteServerIp" class="search-input" placeholder="IP удаленного сервера" style="width:100%; margin-bottom:8px;">
 						<input type="password" id="remoteServerPass" class="search-input" placeholder="Пароль root" style="width:100%; margin-bottom:8px;">
 						<button class="btn btn-success" style="width:100%; justify-content:center;" onclick="setupRemoteTunnel()">🚀 Настроить туннель</button>
@@ -949,7 +948,7 @@ MAIN_HTML = """
 					</div>
 					<div class="form-group">
 						<label class="form-label">Свои IP/подсети:</label>
-						<textarea id="customCidrsInput" class="textarea-input" rows="3" style="width:100%;"></textarea>
+						<textarea id="customCidrsInput" class="textarea-input" rows="3" placeholder="77.88.8.8/32&#10;192.168.10.0/24" style="width:100%;"></textarea>
 					</div>
 					<div class="form-group">
 						<label class="form-label">Режим:</label>
@@ -961,7 +960,7 @@ MAIN_HTML = """
 						</select>
 					</div>
 
-					<div style="display:flex; gap:10px; flex-wrap:wrap;">
+					<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
 						<button class="btn btn-primary" onclick="saveRoutingSettings()">💾 Сохранить</button>
 						<button class="btn" onclick="updateCidrIps()">🔄 Обновить CIDR</button>
 					</div>
@@ -970,13 +969,15 @@ MAIN_HTML = """
 
 			<div class="settings-card">
 				<h3>🛡️ Блокировка рекламы (DNS AdBlock / dnsmasq)</h3>
+				<p class="card-desc">Автоматическая фильтрация рекламы и трекеров на уровне VPN-сервера без потери скорости</p>
+
 				<div class="switch-row">
 					<div class="switch-info"><strong>Включить блокировку рекламы для всех клиентов</strong><span id="adblockStatusLabel">...</span></div>
 					<label class="toggle-switch"><input type="checkbox" id="adblockEnableToggle" onchange="toggleAdblock(this.checked)"><span class="toggle-slider"></span></label>
 				</div>
 
 				<div class="form-row-2">
-					<div>
+					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px;">
 						<label class="form-label">📋 Добавить AdList по ссылке</label>
 						<div style="display:flex; gap:8px; margin-bottom:10px;">
 							<input type="text" id="adblockListUrl" class="search-input" placeholder="https://..." style="flex:1;">
@@ -989,7 +990,7 @@ MAIN_HTML = """
 						<div class="domains-list-box" id="adblockListsBox" style="max-height:340px; overflow-y:auto;"></div>
 					</div>
 
-					<div>
+					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px;">
 						<label class="form-label">🌐 Добавить отдельный домен</label>
 						<div style="display:flex; gap:8px; margin-bottom:10px;">
 							<input type="text" id="adblockDomainInput" class="search-input" placeholder="ads.example.com" style="flex:1;">
@@ -1026,16 +1027,23 @@ MAIN_HTML = """
 		<div class="settings-grid">
 			<div class="settings-card">
 				<h3>🔐 Учетная запись и Панель</h3>
-				<div class="form-group"><label class="form-label">Логин администратора</label><input type="text" id="setAdminLogin" class="search-input" style="width:100%;"></div>
-				<div class="form-group"><label class="form-label">Новый пароль</label><input type="password" id="setAdminPass" class="search-input" placeholder="••••••••" style="width:100%;"></div>
+				<p class="card-desc">Безопасность входа и параметры панели</p>
+
 				<div class="form-row-2">
-					<div class="form-group"><label class="form-label">Порт панели</label><input type="number" id="setPanelPort" class="search-input" style="width:100%;"></div>
-					<div class="form-group"><label class="form-label">Домен / IP сервера</label><input type="text" id="setOvpnDomain" class="search-input" style="width:100%;"></div>
+					<div class="form-group"><label class="form-label">Логин администратора</label><input type="text" id="setAdminLogin" class="search-input"></div>
+					<div class="form-group"><label class="form-label">Новый пароль</label><input type="password" id="setAdminPass" class="search-input" placeholder="••••••••"></div>
+				</div>
+
+				<div class="form-row-2">
+					<div class="form-group"><label class="form-label">Порт панели</label><input type="number" id="setPanelPort" class="search-input"></div>
+					<div class="form-group"><label class="form-label">Домен / IP сервера</label><input type="text" id="setOvpnDomain" class="search-input"></div>
 				</div>
 			</div>
 
 			<div class="settings-card">
 				<h3>🎛️ Модули и функции</h3>
+				<p class="card-desc">Включение и отключение элементов интерфейса</p>
+
 				<div class="switch-row"><div class="switch-info"><strong>📈 Мониторинг скорости</strong><span>Живые графики скорости</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableSpeed"><span class="toggle-slider"></span></label></div>
 				<div class="switch-row"><div class="switch-info"><strong>💻 Панель ресурсов</strong><span>CPU / RAM / Disk / Ping</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableHwBar"><span class="toggle-slider"></span></label></div>
 				<div class="switch-row"><div class="switch-info"><strong>🚫 Блок BitTorrent</strong><span>iptables string match</span></div><label class="toggle-switch"><input type="checkbox" id="setTorrentBlock"><span class="toggle-slider"></span></label></div>
@@ -1043,8 +1051,14 @@ MAIN_HTML = """
 
 			<div class="settings-card">
 				<h3>🛠️ Управление службами</h3>
-				<button class="btn btn-primary" style="width:100%; padding:12px; justify-content:center; margin-bottom:10px;" onclick="saveAllAccountSettings(false)">💾 Сохранить настройки</button>
-				<button class="btn btn-success" style="width:100%; padding:12px; justify-content:center; margin-bottom:14px;" onclick="saveAllAccountSettings(true)">🚀 Сохранить и перезапустить</button>
+				<p class="card-desc">Применение параметров и управление демоном</p>
+
+				<div style="display:flex; flex-direction:column; gap:10px;">
+					<button class="btn btn-primary" style="padding:13px; justify-content:center;" onclick="saveAllAccountSettings(false)">💾 Сохранить настройки</button>
+					<button class="btn btn-success" style="padding:13px; justify-content:center;" onclick="saveAllAccountSettings(true)">🚀 Сохранить и перезапустить</button>
+				</div>
+
+				<h4 style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">OpenVPN daemon</h4>
 				<div class="form-row-3">
 					<button class="btn" style="justify-content:center;" onclick="controlOvpnService('restart')">🔄 Рестарт</button>
 					<button class="btn btn-success" style="justify-content:center;" onclick="controlOvpnService('start')">▶️ Старт</button>
@@ -1060,11 +1074,13 @@ MAIN_HTML = """
 		<h2>➕ Новый клиент</h2>
 		<p>Латиница, цифры, дефис и подчеркивание.</p>
 		<label class="form-label">Имя клиента</label>
-		<input type="text" id="newClientName" class="search-input" placeholder="iphone-user" style="width:100%; margin-bottom:12px;">
+		<input type="text" id="newClientName" class="search-input" placeholder="iphone-user" style="width:100%; margin-bottom:12px;" autofocus>
 		<label class="form-label">Заметка</label>
 		<input type="text" id="newClientNote" class="search-input" placeholder="Например: Ноутбук" style="width:100%; margin-bottom:12px;">
-		<label class="form-label">Срок в днях (0 = ∞)</label>
-		<input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%; margin-bottom:18px;">
+		<div style="margin-bottom: 20px;">
+			<label class="form-label">Срок в днях (0 = ∞)</label>
+			<input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%;">
+		</div>
 		<div style="display:flex; gap:10px; justify-content:flex-end;">
 			<button class="btn" onclick="closeModals()">Отмена</button>
 			<button class="btn btn-primary" onclick="submitCreateClient()">Создать</button>
@@ -1090,8 +1106,10 @@ MAIN_HTML = """
 	<div class="modal-card">
 		<h2>📦 Резервное копирование</h2>
 		<p>Полный архив конфигурации.</p>
-		<button class="btn" onclick="downloadBackupArchive()" style="width:100%; padding:13px; justify-content:center; margin-bottom:10px;">📥 Скачать архив</button>
-		<button class="btn btn-primary" onclick="document.getElementById('backupFileInput').click()" style="width:100%; padding:13px; justify-content:center; margin-bottom:14px;">📤 Восстановить из файла</button>
+		<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+			<button class="btn" onclick="downloadBackupArchive()" style="padding:14px; justify-content:center;">📥 Скачать архив</button>
+			<button class="btn btn-primary" onclick="document.getElementById('backupFileInput').click()" style="padding:14px; justify-content:center;">📤 Восстановить из файла</button>
+		</div>
 		<input type="file" id="backupFileInput" accept=".tar.gz" style="display:none;" onchange="processRestoreFile(event)">
 		<button class="btn" style="width:100%; justify-content:center;" onclick="closeModals()">Закрыть</button>
 	</div>
@@ -1103,7 +1121,6 @@ MAIN_HTML = """
 let currentTheme = localStorage.getItem("ovpn_theme") || "dark";
 let currentLang = localStorage.getItem("ovpn_lang") || "ru";
 let panelConfig = { enable_speed_monitor: "1", enable_hardware_bar: "1", speed_limit_mode: "none", global_speed_limit_kbps: "0", selected_limit_clients: "[]" };
-let expandedClientsSet = new Set();
 let allClientsList = [];
 let currentPage = 1;
 let pageSize = parseInt(localStorage.getItem('ovpn_page_size')) || 20;
@@ -1112,6 +1129,7 @@ let selectedWindowSeconds = 30;
 let speedPollTimer = null;
 let speedDataPoints = [];
 let latestLiveSpeeds = {};
+let chartFilterDirty = false;
 let clientColorRegistry = {};
 let paletteIdx = 0;
 const colorPalette = ['#3b82f6','#10b981','#f43f5e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#6366f1','#14b8a6'];
@@ -1215,6 +1233,7 @@ function openCreateModal() {
 	document.getElementById('newClientName').value = '';
 	document.getElementById('newClientNote').value = '';
 	document.getElementById('newClientTtl').value = '0';
+	setTimeout(() => document.getElementById('newClientName').focus(), 100);
 }
 function openBackupModal() { document.getElementById('backupModal').classList.add('active'); }
 function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
@@ -1222,12 +1241,10 @@ function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m =
 document.querySelectorAll('.modal-overlay').forEach(m => {
 	m.addEventListener('click', e => { if (e.target === m) closeModals(); });
 });
-
-function toggleCardExtra(name) {
-	if (expandedClientsSet.has(name)) expandedClientsSet.delete(name);
-	else expandedClientsSet.add(name);
-	applyClientFilter();
-}
+document.addEventListener('keydown', e => {
+	if (e.key === 'Escape') closeModals();
+	if (e.key === 'Enter' && document.getElementById('createModal').classList.contains('active')) submitCreateClient();
+});
 
 function onFilterInputChange() {
 	const input = document.getElementById('clientSearch');
@@ -1238,7 +1255,7 @@ function onFilterInputChange() {
 }
 function clearClientSearch() {
 	const input = document.getElementById('clientSearch');
-	if (input) input.value = '';
+	if (input) { input.value = ''; input.focus(); }
 	onFilterInputChange();
 }
 function onPageSizeChange() {
@@ -1247,7 +1264,7 @@ function onPageSizeChange() {
 	currentPage = 1;
 	applyClientFilter();
 }
-function goToPage(p) { currentPage = p; applyClientFilter(); }
+function goToPage(p) { currentPage = p; applyClientFilter(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 async function loadClients() {
 	if (document.hidden) return;
@@ -1335,7 +1352,6 @@ function renderClientsGrid(clients) {
 	grid.innerHTML = clients.map(c => {
 		const isOnline = c.is_online;
 		const isPaused = c.is_paused;
-		const isExpanded = expandedClientsSet.has(c.name);
 
 		const onlineHtml = isPaused
 			? `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`
@@ -1360,7 +1376,7 @@ function renderClientsGrid(clients) {
 		const actionsHtml = c.status === 'valid'
 			? `
 				<button class="btn btn-sm" onclick="showQrModal('${c.name}', '${c.share_token}')" title="QR-код">📱</button>
-				<button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')">🔗</button>
+				<button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')" title="Ссылка">🔗</button>
 				<button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${c.name}')" title="Скачать .ovpn">⬇️</button>
 				<button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${c.name}')">${isPaused ? '▶️' : '⏸️'}</button>
 				<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', false)" title="Отозвать">🚫</button>
@@ -1368,7 +1384,7 @@ function renderClientsGrid(clients) {
 			: `<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
 
 		return `
-			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''} ${isExpanded ? 'expanded' : ''}" id="client-card-${c.name}">
+			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''}" id="client-card-${c.name}">
 				<div>
 					<div class="card-top">
 						<div class="client-name">${c.name}</div>
@@ -1382,18 +1398,15 @@ function renderClientsGrid(clients) {
 						</div>
 						<div class="session-meta ${isOnline ? '' : 'offline-meta'}" id="card-meta-${c.name}">
 							<div class="session-row">
-								<span>🌐 <strong id="card-ip-${c.name}">${isOnline ? c.real_ip : '—'}</strong></span>
-								<span>TUN: <strong id="card-tun-${c.name}">${isOnline ? c.virt_ip : '—'}</strong></span>
+								<span>🌐 <strong id="card-ip-${c.name}">${c.real_ip}</strong></span>
+								<span>TUN: <strong id="card-tun-${c.name}">${c.virt_ip}</strong></span>
 							</div>
 							${speedRowHtml}
 						</div>
-						<button type="button" class="expand-toggle-btn" onclick="toggleCardExtra('${c.name}')">
-							${isExpanded ? '▲ Скрыть детали и даты' : '▼ Подробнее: даты и лимит'}
-						</button>
-						<div class="card-extra-info">
-							<div class="extra-line"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
-							<div class="extra-line"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
-							<div class="extra-line"><span>Лимит:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
+						<div class="card-extra-meta">
+							<div class="card-extra-line"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
+							<div class="card-extra-line"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
+							<div class="card-extra-line"><span>Лимит:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
 						</div>
 					</div>
 				</div>
