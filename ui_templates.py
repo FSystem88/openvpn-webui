@@ -1081,14 +1081,14 @@ MAIN_HTML = r"""
 					</select>
 				</div>
 				<div class="form-group" id="globalLimitGroup">
-					<label class="form-label">Общий лимит скорости (Кбит/с)</label>
-					<input type="number" min="0" step="64" class="search-input" id="globalSpeedLimitKbps" value="0" placeholder="Например: 5120">
+					<label class="form-label">Общий лимит скорости (МБ/с)</label>
+					<input type="number" min="0" step="0.5" class="search-input" id="globalSpeedLimitMB" value="0" placeholder="Например: 2">
 					<div class="speed-presets">
-						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(1024)">1 Мбит/с</button>
-						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(5120)">5 Мбит/с</button>
-						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(10240)">10 Мбит/с</button>
-						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(25600)">25 Мбит/с</button>
-						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(51200)">50 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(0.5)">0.5 МБ/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(1)">1 МБ/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(2)">2 МБ/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(5)">5 МБ/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(10)">10 МБ/с</button>
 						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(0)">∞ Без лимита</button>
 					</div>
 				</div>
@@ -1445,11 +1445,191 @@ function applyTheme(theme) {
 function toggleTheme() { applyTheme(currentTheme === "light" ? "dark" : "light"); }
 applyTheme(currentTheme);
 
-function changeLanguage(lang) { currentLang = lang; localStorage.setItem("ovpn_lang", lang); }
+const RU_TO_EN = {
+	"Создать": "Create", "Бэкап": "Backup", "Выйти": "Logout", "Сервер:": "Server:", "Онлайн:": "Online:",
+	"👥 Клиенты": "👥 Clients", "📈 Скорость": "📈 Speed", "🌐 Сайты": "🌐 Sites", "📊 Инфографика": "📊 Infographics",
+	"⚡ Лимиты": "⚡ Limits", "🔀 Маршрутизация": "🔀 Routing", "⚙️ Конфигурация": "⚙️ Config", "🔐 Аккаунт": "🔐 Account",
+	"Все активные": "All Active", "🟢 Только онлайн": "🟢 Online only", "⚪ Только офлайн": "⚪ Offline only",
+	"⏸️ На паузе": "⏸️ Paused", "🚫 Отозванные": "🚫 Revoked", "🟢 Сначала онлайн": "🟢 Online first",
+	"⬇️ По трафику": "⬇️ By Traffic", "🔤 По имени": "🔤 By Name", "По 20": "20 / page", "По 50": "50 / page", "По 100": "100 / page",
+	"Мониторинг скорости в реальном времени": "Realtime Speed Monitoring",
+	"Прямой опрос сокета OpenVPN в памяти": "In-memory OpenVPN socket telemetry",
+	"👥 Все клиенты": "👥 All Clients", "Σ Суммарно": "Σ Total", "Текущий Download:": "Current Download:",
+	"Текущий Upload:": "Current Upload:", "Активных подключений:": "Active sessions:",
+	"🌐 Журнал посещаемых сайтов": "🌐 Visited Sites Log",
+	"История переходов по всем клиентам сервера в реальном времени": "Real-time domain history across all clients",
+	"🔄 Обновить": "🔄 Refresh", "🚫 Исключения": "🚫 Ignored", "🗑️ Очистить": "🗑️ Clear",
+	"∑ Весь трафик сервера": "∑ Total Server Traffic", "📥 Суммарный Download": "📥 Total Download", "📤 Суммарный Upload": "📤 Total Upload",
+	"📊 Топ-10 клиентов по трафику": "📊 Top 10 Clients by Traffic", "👥 Распределение статусов": "👥 Status Distribution",
+	"🌐 Топ-10 посещаемых доменов": "🌐 Top 10 Visited Domains",
+	"⚡ Двусторонний лимит скорости (tc + ifb0)": "⚡ Bidirectional Speed Limit (tc + ifb0)",
+	"Ограничивает скорость в обе стороны (Download + Upload) для активных сессий. 0 = без ограничения.": "Limits Download & Upload speed for active sessions. 0 = unlimited.",
+	"Режим ограничения": "Limit mode", "⚪ Без ограничения": "⚪ Disabled",
+	"🌐 Для всех клиентов (общий лимит)": "🌐 All clients (global limit)",
+	"☑️ Для выбранных клиентов (общий лимит)": "☑️ Selected clients (global limit)",
+	"🎯 Индивидуально для каждого клиента": "🎯 Per-client individual limits",
+	"Общий лимит скорости (Кбит/с)": "Global speed limit (kbps)",
+	"1 Мбит/с": "1 Mbps", "5 Мбит/с": "5 Mbps", "10 Мбит/с": "10 Mbps", "25 Мбит/с": "25 Mbps", "50 Мбит/с": "50 Mbps", "∞ Без лимита": "∞ Unlimited",
+	"💾 Применить лимиты скорости": "💾 Apply speed limits", "👥 Список клиентов для лимитов": "👥 Clients for speed limits",
+	"Сплит-туннель (WireGuard + ipset)": "Split Tunnel (WireGuard + ipset)",
+	"Маршрутизация через второй VPN-сервер": "Routing via secondary VPN server",
+	"Статус WG0:": "WG0 Status:", "Подсетей в ipset:": "Subnets in ipset:",
+	"🔗 Удалённая точка выхода": "🔗 Remote Exit Node", "Подключено к:": "Connected to:", "Перенастроить": "Reconfigure",
+	"❌ Отмена": "❌ Cancel", "🚀 Настроить туннель": "🚀 Setup Tunnel",
+	"🚫 Блокировка BitTorrent": "🚫 BitTorrent Block", "Защита от абузов и банов хостинга": "Protection against host abuse",
+	"URL списка подсетей:": "CIDR list URL:", "Свои IP/подсети:": "Custom IPs / subnets:", "Режим:": "Mode:",
+	"🔴 Отключено": "🔴 Disabled", "🟡 CIDR напрямую, остальное в WG": "🟡 CIDR direct, rest via WG",
+	"🟣 CIDR в WG, остальное напрямую": "🟣 CIDR via WG, rest direct", "🟢 Весь трафик через WireGuard": "🟢 Full tunnel via WireGuard",
+	"🔗 Управление ссылками сплит-туннеля": "🔗 Split Tunnel Link Management",
+	"Разрешите URL в IP для выборочной маршрутизации через WireGuard или напрямую.": "Resolve URLs to IPs for selective routing via WireGuard or direct.",
+	"🔍 Найти IP": "🔍 Resolve IP", "💾 Сохранить": "💾 Save", "🔄 Обновить CIDR": "🔄 Sync CIDR",
+	"🛡️ Блокировка рекламы (DNS AdBlock / dnsmasq)": "🛡️ Ad Blocking (DNS AdBlock / dnsmasq)",
+	"Автоматическая фильтрация рекламы и трекеров на уровне VPN-сервера без потери скорости": "Server-side ad and tracker filtering with zero speed loss",
+	"Включить блокировку рекламы для всех клиентов": "Enable ad blocking for all clients",
+	"📋 Добавить AdList по ссылке": "📋 Add AdList URL", "⚫ Черный список": "⚫ Blacklist", "⚪ Белый список": "⚪ Whitelist",
+	"➕ Добавить": "➕ Add", "🌐 Добавить отдельный домен": "🌐 Add custom domain", "⚫ В черный": "⚫ To blacklist", "⚪ В белый": "⚪ To whitelist",
+	"⚙️ Прямой редактор server.conf": "⚙️ Direct server.conf Editor", "🔄 Перечитать": "🔄 Reload", "💾 Сохранить и перезапустить": "💾 Save & Restart",
+	"🔐 Учетная запись и Панель": "🔐 Account & Panel", "Безопасность входа и сетевые параметры панели": "Login security and panel network settings",
+	"Логин администратора": "Admin login", "Новый пароль": "New password", "Время сессии (сек)": "Session max age (sec)",
+	"Порт панели": "Panel port", "Хранение доменов (сек)": "Domain retention (sec)",
+	"🎛️ Модули и функции": "🎛️ Modules & Features", "Включение и отключение в реальном времени": "Toggle features in real time",
+	"🕵️ Сниффер трафика": "🕵️ Traffic Sniffer", "SNI / DNS / HTTP домены": "SNI / DNS / HTTP domains",
+	"📈 Мониторинг скорости": "📈 Speed Monitor", "Живые графики скорости": "Live speed charts",
+	"📊 Статистика трафика": "📊 Traffic Stats", "SQLite учет и лимиты": "SQLite tracking and quotas",
+	"🌐 История IP подключений": "🌐 IP Connection History", "Сохранять реальные IP пользователей": "Store real client IPs",
+	"🎨 Инфографика": "🎨 Infographics", "Диаграммы и аналитика": "Charts and analytics",
+	"💻 Панель ресурсов": "💻 Hardware Bar", "⚡ Блок QUIC (UDP/443)": "⚡ Block QUIC (UDP/443)", "Точный SNI сниффинг": "Accurate SNI sniffing",
+	"🚫 Блок BitTorrent": "🚫 Block BitTorrent", "🛠️ Управление службами и БД": "🛠️ Services & Database",
+	"Применение параметров и очистка данных": "Apply settings and clean data",
+	"💾 Сохранить настройки": "💾 Save settings", "🚀 Сохранить и перезапустить": "🚀 Save & Restart",
+	"🔄 Рестарт": "🔄 Restart", "▶️ Старт": "▶️ Start", "⏹️ Стоп": "⏹️ Stop",
+	"🗑️ Сайты": "🗑️ Sites", "↺ Трафик": "↺ Traffic", "🌐 Очистить IP": "🌐 Clear IPs",
+	"💡 Подсказка:": "💡 Hint:",
+	"После смены порта или протокола не забудьте сохранить server.conf и перевыпустить .ovpn профили.": "After changing port or protocol, save server.conf and reissue .ovpn profiles.",
+	"➕ Новый клиент": "➕ New Client", "Латиница, цифры, дефис и подчеркивание.": "Latin letters, numbers, hyphens, underscores.",
+	"Имя клиента": "Client name", "Заметка": "Note", "Лимит ГБ (0 = ∞)": "Limit GB (0 = ∞)", "Срок в днях (0 = ∞)": "TTL days (0 = ∞)",
+	"Отмена": "Cancel", "Закрыть": "Close", "🔗 Копировать": "🔗 Copy",
+	"Отсканируйте камерой телефона для скачивания .ovpn профиля": "Scan with phone camera to download .ovpn profile",
+	"История посещенных доменов и подключений": "Visited domains and connection history",
+	"📋 История": "📋 History", "📊 Топ-10": "📊 Top-10", "🌐 IP-адреса": "🌐 IP Addresses",
+	"🚫 Исключения из сниффинга": "🚫 Sniffer Ignore List", "➕ Скрыть домен": "➕ Ignore domain",
+	"📦 Резервное копирование": "📦 Backup & Restore", "Полный архив ключей, сертификатов и конфигурации.": "Full archive of keys, certs and configs.",
+	"📥 Скачать архив": "📥 Download archive", "📤 Восстановить из файла": "📤 Restore from file", 
+	"Общий лимит скорости (МБ/с)": "Global speed limit (MB/s)",
+	"0.5 МБ/с": "0.5 MB/s", "1 МБ/с": "1 MB/s", "2 МБ/с": "2 MB/s", "5 МБ/с": "5 MB/s", "10 МБ/с": "10 MB/s", "∞ Без лимита": "∞ Unlimited",
+};
+
+const PLACEHOLDER_EN = {
+	"🔍 Поиск по имени или IP...": "🔍 Search by name or IP...",
+	"🔍 Поиск по домену или клиенту...": "🔍 Search by domain or client...",
+	"Например: 5120": "e.g. 5120",
+	"IP удаленного сервера": "Remote server IP",
+	"Пароль root": "Root password",
+	"Например: Ноутбук шефа": "e.g. Boss laptop",
+	"🔍 Фильтр...": "🔍 Filter...",
+	"Например: yandex.ru или google.com": "e.g. example.com"
+};
+
+const I18N_DYN = {
+	ru: {
+		online: "🟢 Онлайн", offline: "⚪ Офлайн", paused: "⏸️ НА ПАУЗЕ", valid: "АКТИВЕН", revoked: "ОТОЗВАН",
+		traffic: "Трафик:", connected: "Подключён:", disconnected: "Отключён:", speed_limit: "Лимит скорости:",
+		restore: "♻️ Восстановить", del: "🗑️ Удалить", updated: "Обновлено:", server_on: "● Сервер активен", server_off: "● Остановлен",
+		showing: "Показано {from}–{to} из {total}", empty: "Список клиентов пуст",
+		hint_sel: "Отметьте клиентов, к которым применится общий лимит.",
+		hint_per: "Укажите лимит в МБ/с для каждого клиента (0 = без лимита).",
+		hint_none: "Выберите режим «Для выбранных» или «Индивидуально» для настройки по клиентам.",
+		wg_on: "АКТИВЕН", wg_off: "ОТКЛЮЧЕН",
+		remote_conn: "🟢 Подключено", remote_inact: "🟢 Не активно", remote_none: "⚪ Не настроено",
+		direct: "🟡 Напрямую", via_wg: "🟣 Через WG",
+		no_records: "Записей нет", no_lists: "Списков нет", no_domains: "Доменов нет",
+		adb_status: "Статус:", adb_on: "🟢 АКТИВЕН", adb_off: "⚪ ОТКЛЮЧЕН", adb_rules: "Правил:"
+	},
+	en: {
+		online: "🟢 Online", offline: "⚪ Offline", paused: "⏸️ PAUSED", valid: "VALID", revoked: "REVOKED",
+		traffic: "Traffic:", connected: "Connected:", disconnected: "Disconnected:", speed_limit: "Speed limit:",
+		restore: "♻️ Restore", del: "🗑️ Delete", updated: "Updated:", server_on: "● Server Active", server_off: "● Stopped",
+		showing: "Showing {from}–{to} of {total}", empty: "No clients found",
+		hint_sel: "Check clients to apply the global speed limit.",
+		hint_per: "Set speed limit in MB/s per client (0 = unlimited).",
+		hint_none: "Choose 'Selected clients' or 'Per-client' mode to configure clients.",
+		wg_on: "ACTIVE", wg_off: "INACTIVE",
+		remote_conn: "🟢 Connected", remote_inact: "🟢 Inactive", remote_none: "⚪ Not configured",
+		direct: "🟡 Direct", via_wg: "🟣 Via WG",
+		no_records: "No records", no_lists: "No lists", no_domains: "No domains",
+		adb_status: "Status:", adb_on: "🟢 ACTIVE", adb_off: "⚪ DISABLED", adb_rules: "Rules:"
+	}
+};
+
+function t(key, params = {}) {
+	let s = (I18N_DYN[currentLang] && I18N_DYN[currentLang][key]) || I18N_DYN.ru[key] || key;
+	for (const k in params) s = s.replace(`{${k}}`, params[k]);
+	return s;
+}
+
+function applyLanguage(lang) {
+	currentLang = lang === 'en' ? 'en' : 'ru';
+	localStorage.setItem("ovpn_lang", currentLang);
+	document.documentElement.lang = currentLang;
+	const sel = document.getElementById("langSelect");
+	if (sel) sel.value = currentLang;
+
+	document.querySelectorAll("h1,h2,h3,h4,p,span,strong,label,button,a,option,.tab-btn").forEach(el => {
+		if (el.children.length > 0 && el.tagName !== "OPTION") return;
+		const txt = el.textContent.trim();
+		if (!el.dataset.origRu && RU_TO_EN[txt]) el.dataset.origRu = txt;
+		if (el.dataset.origRu) {
+			el.textContent = currentLang === 'en' ? (RU_TO_EN[el.dataset.origRu] || el.dataset.origRu) : el.dataset.origRu;
+		}
+	});
+	document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(el => {
+		if (!el.dataset.origPh && PLACEHOLDER_EN[el.placeholder]) el.dataset.origPh = el.placeholder;
+		if (el.dataset.origPh) {
+			el.placeholder = currentLang === 'en' ? PLACEHOLDER_EN[el.dataset.origPh] : el.dataset.origPh;
+		}
+	});
+
+	const stEl = document.getElementById('serverStatusText');
+	if (stEl) stEl.textContent = stEl.classList.contains('active') ? t('server_on') : t('server_off');
+	applyClientFilter();
+	renderSpeedLimitsEditor();
+	syncChartUserDropdown();
+	if (document.getElementById('tab-routing')?.classList.contains('active')) {
+		loadRoutingView();
+	}
+}
+
+function changeLanguage(lang) { applyLanguage(lang); }
 
 function showToast(msg, type = 'success') {
+	let text = String(msg || '');
+	if (currentLang === 'en') {
+		const toastMap = {
+			"✅ Лимиты скорости применены": "✅ Speed limits applied",
+			"✅ Клиент создан": "✅ Client created",
+			"⏸️ На паузе": "⏸️ Paused",
+			"▶️ Активен": "▶️ Active",
+			"✅ Готово": "✅ Done",
+			"✅ Восстановлен": "✅ Restored",
+			"✅ Ссылка скопирована": "✅ Link copied",
+			"✅ Скопировано": "✅ Copied",
+			"✅ Настройки сохранены": "✅ Settings saved",
+			"✅ CIDR обновлены": "✅ CIDR updated",
+			"❌ Укажите IP и пароль": "❌ IP and password required",
+			"✅ Туннель настроен": "✅ Tunnel deployed",
+			"✅ AdBlock обновлён": "✅ AdBlock updated",
+			"✅ Список загружен": "✅ List loaded",
+			"✅ server.conf сохранён": "✅ server.conf saved",
+			"✅ Восстановлено": "✅ Restored",
+			"❌ Ошибка": "❌ Error"
+		};
+		if (toastMap[text]) text = toastMap[text];
+		else text = text
+			.replace(/^Домен (.+) скрыт$/, "Domain $1 ignored")
+			.replace(/^❌ Ошибка/, "❌ Error");
+	}
 	const box = document.getElementById('toastBox');
-	box.textContent = msg;
+	box.textContent = text;
 	box.className = `toast ${type} show`;
 	clearTimeout(box._t);
 	box._t = setTimeout(() => box.classList.remove('show'), 3200);
@@ -1492,8 +1672,27 @@ function watchBackgroundTask(taskId, onDone) {
 			const j = await r.json();
 			const tsk = j.task;
 			if (!tsk) return;
-			document.getElementById('taskProgressTitle').textContent = tsk.title || taskId;
-			document.getElementById('taskProgressMsg').textContent = tsk.message || '';
+			const trTask = (str) => {
+				if (currentLang !== 'en' || !str) return str || '';
+				const map = {
+					"Выполняется...": "Running...", "Готово": "Done",
+					"Обновление CIDR": "Updating CIDR", "CIDR обновлены": "CIDR updated",
+					"Загрузка AdList": "Loading AdList", "Настройка WireGuard туннеля": "WireGuard Tunnel Setup",
+					"Проверка DNS-служб...": "Checking DNS services...", "Установка dnsmasq...": "Installing dnsmasq...",
+					"Настройка конфигурации dnsmasq...": "Configuring dnsmasq...", "Сборка списков доменов...": "Building domain lists...",
+					"Применение правил iptables и OpenVPN...": "Applying iptables & OpenVPN rules...",
+					"Скачивание списка доменов...": "Downloading domain list...", "Сохранение в кэш и БД...": "Saving to cache & DB...",
+					"Подготовка SSH-ключа...": "Preparing SSH key...", "Установка WireGuard на удалённом сервере...": "Installing WireGuard on remote server...",
+					"Запуск локального wg0...": "Starting local wg0...", "Туннель развёрнут": "Tunnel deployed"
+				};
+				if (map[str]) return map[str];
+				return str
+					.replace(/^Запись (\d+) правил в dnsmasq\.\.\.$/, "Writing $1 rules to dnsmasq...")
+					.replace(/^Подключение к (.+)\.\.\.$/, "Connecting to $1...")
+					.replace(/^Список загружен \((\d+) правил\)$/, "List loaded ($1 rules)");
+			};
+			document.getElementById('taskProgressTitle').textContent = trTask(tsk.title || taskId);
+			document.getElementById('taskProgressMsg').textContent = trTask(tsk.message || '');
 			document.getElementById('taskProgressPct').textContent = `${tsk.progress || 0}%`;
 			document.getElementById('taskProgressFill').style.width = `${tsk.progress || 0}%`;
 			if (tsk.status === 'done' || tsk.status === 'error') {
@@ -1562,7 +1761,7 @@ async function loadClients() {
 
 		const isActive = data.server?.status === 'active';
 		const stEl = document.getElementById('serverStatusText');
-		stEl.textContent = isActive ? '● Сервер активен' : '● Остановлен';
+		stEl.textContent = isActive ? t('server_on') : t('server_off');
 		stEl.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
 		if (data.server?.domain && data.server?.port) {
 			document.getElementById('bannerEndpointCode').textContent = `${data.server.domain}:${data.server.port} (${data.server.proto || 'udp'})`;
@@ -1571,7 +1770,7 @@ async function loadClients() {
 		const validTotal = allClientsList.filter(c => c.status === 'valid').length;
 		const online = allClientsList.filter(c => c.is_online).length;
 		document.getElementById('activeClientsCount').textContent = `${online} / ${validTotal}`;
-		document.getElementById('lastSyncTime').textContent = `Обновлено: ${new Date().toLocaleTimeString()}`;
+		document.getElementById('lastSyncTime').textContent = `${t('updated')} ${new Date().toLocaleTimeString()}`;
 
 		if (!chartFilterDirty) syncChartUserDropdown();
 		const isDomainsTabActive = document.getElementById('tab-domains')?.classList.contains('active');
@@ -1620,7 +1819,7 @@ function renderPagination(totalItems, startIdx, countOnPage, totalPages) {
 	const bar = document.getElementById('paginationBar');
 	if (totalItems === 0) { bar.style.display = 'none'; return; }
 	bar.style.display = 'flex';
-	document.getElementById('paginationInfo').textContent = `Показано ${startIdx + 1}–${startIdx + countOnPage} из ${totalItems}`;
+	document.getElementById('paginationInfo').textContent = t('showing', { from: startIdx + 1, to: startIdx + countOnPage, total: totalItems });
 	let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>«</button>`;
 	for (let p = 1; p <= totalPages; p++) {
 		if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2) {
@@ -1636,7 +1835,7 @@ function renderPagination(totalItems, startIdx, countOnPage, totalPages) {
 function renderClientsGrid(clients) {
 	const grid = document.getElementById('clientsGrid');
 	if (!clients || clients.length === 0) {
-		grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);">Список клиентов пуст</div>`;
+		grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);">${t('empty')}</div>`;
 		return;
 	}
 	const snifferOn = panelConfig.enable_sniffer === "1";
@@ -1647,9 +1846,9 @@ function renderClientsGrid(clients) {
 		const isOnline = c.is_online;
 		const isPaused = c.is_paused;
 		const onlineHtml = isPaused
-			? `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`
-			: (isOnline ? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>` : `<span style="color:var(--text-muted);">⚪ Офлайн</span>`);
-		const statusLabel = c.status === 'revoked' ? 'ОТОЗВАН' : (isPaused ? 'НА ПАУЗЕ' : 'АКТИВЕН');
+			? `<span style="color:var(--warning); font-weight:600;">${t('paused')}</span>`
+			: (isOnline ? `<span style="color:var(--success); font-weight:600;">${t('online')}</span>` : `<span style="color:var(--text-muted);">${t('offline')}</span>`);
+		const statusLabel = c.status === 'revoked' ? t('revoked') : (isPaused ? t('paused') : t('valid'));
 		const badgeCls = c.status === 'revoked' ? 'revoked' : (isPaused ? 'paused' : 'valid');
 
 		const totalBytes = formatBytes((c.traffic_recv || 0) + (c.traffic_sent || 0));
@@ -1660,23 +1859,24 @@ function renderClientsGrid(clients) {
 		const downColor = isOnline ? '#60a5fa' : 'var(--text-muted)';
 		const upColor = isOnline ? '#34d399' : 'var(--text-muted)';
 		const noteHtml = safeNote ? `<div class="client-note" title="${safeNote}">💬 ${safeNote}</div>` : '';
+		const limitMbStr = c.speed_limit_kbps > 0 ? `${+(c.speed_limit_kbps / 8192).toFixed(2)} MB/s` : '—';
 
-		const speedRowHtml = speedOn ? `<div class="live-speed-row"><span id="card-down-${c.name}" style="color:${downColor};">↓ ${c.speed_down_fmt || '0 B/s'}</span><span id="card-up-${c.name}" style="color:${upColor};">↑ ${c.speed_up_fmt || '0 B/s'}</span></div>` : '';
-		const trafficBoxHtml = statsOn ? `<div class="card-traffic"><div><div class="traffic-main">Трафик: ${totalBytes}</div><div class="traffic-sub">↓ ${downBytes} / ↑ ${upBytes}</div></div><button class="btn btn-sm" style="padding:4px 8px;" onclick="resetClientTraffic('${c.name}')">↺</button></div>` : '';
-		const sitesBtnHtml = snifferOn ? `<button class="btn btn-sm" onclick="openDomainsModal('${c.name}')" title="Сайты и IP">🌐</button>` : '';
+		const speedRowHtml = speedOn ? `<div class="live-speed-row"><span id="card-down-${safeName}" style="color:${downColor};">↓ ${c.speed_down_fmt || '0 B/s'}</span><span id="card-up-${safeName}" style="color:${upColor};">↑ ${c.speed_up_fmt || '0 B/s'}</span></div>` : '';
+		const trafficBoxHtml = statsOn ? `<div class="card-traffic"><div><div class="traffic-main">${t('traffic')} ${totalBytes}</div><div class="traffic-sub">↓ ${downBytes} / ↑ ${upBytes}</div></div><button class="btn btn-sm" style="padding:4px 8px;" onclick="resetClientTraffic('${safeName}')">↺</button></div>` : '';
+		const sitesBtnHtml = snifferOn ? `<button class="btn btn-sm" onclick="openDomainsModal('${safeName}')">🌐</button>` : '';
 
 		const actionsHtml = c.status === 'valid'
-			? `${sitesBtnHtml}<button class="btn btn-sm" onclick="showQrModal('${c.name}', '${c.share_token}')">📱</button><button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')">🔗</button><button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${c.name}')">⬇️</button><button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${c.name}')">${isPaused ? '▶️' : '⏸️'}</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', false)">🚫</button>`
-			: `${sitesBtnHtml}<button class="btn btn-sm btn-success" onclick="restoreRevokedClient('${c.name}')">♻️ Восстановить</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
+			? `${sitesBtnHtml}<button class="btn btn-sm" onclick="showQrModal('${safeName}', '${c.share_token}')">📱</button><button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')">🔗</button><button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${safeName}')">⬇️</button><button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${safeName}')">${isPaused ? '▶️' : '⏸️'}</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${safeName}', false)">🚫</button>`
+			: `${sitesBtnHtml}<button class="btn btn-sm btn-success" onclick="restoreRevokedClient('${safeName}')">${t('restore')}</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${safeName}', true)">${t('del')}</button>`;
 
 		return `
-			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''}" id="client-card-${c.name}">
+			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''}" id="client-card-${safeName}">
 				<div>
-					<div class="card-top"><div class="client-name">${c.name}</div><div class="client-badge ${badgeCls}">${statusLabel}</div></div>
+					<div class="card-top"><div class="client-name">${safeName}</div><div class="client-badge ${badgeCls}">${statusLabel}</div></div>
 					${noteHtml}
 					<div class="card-details">
 						<div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
-							<span id="card-online-${c.name}">${onlineHtml}</span>
+							<span id="card-online-${safeName}">${onlineHtml}</span>
 							<span style="font-size:11px;">${c.created} → ${c.expires}</span>
 						</div>
 						<div class="session-meta ${isOnline ? '' : 'offline-meta'}">
@@ -1685,9 +1885,9 @@ function renderClientsGrid(clients) {
 						</div>
 						${trafficBoxHtml}
 						<div class="card-extra-meta">
-							<div class="card-extra-line"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
-							<div class="card-extra-line"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
-							<div class="card-extra-line"><span>Лимит скорости:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
+							<div class="card-extra-line"><span>${t('connected')}</span><strong>${formatTs(c.last_connected_at)}</strong></div>
+							<div class="card-extra-line"><span>${t('disconnected')}</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
+							<div class="card-extra-line"><span>${t('speed_limit')}</span><strong>${limitMbStr}</strong></div>
 						</div>
 					</div>
 				</div>
@@ -1697,9 +1897,9 @@ function renderClientsGrid(clients) {
 	}).join('');
 }
 
-function setGlobalSpeedPreset(kbps) {
-	const el = document.getElementById('globalSpeedLimitKbps');
-	if (el) el.value = kbps;
+function setGlobalSpeedPreset(mb) {
+	const el = document.getElementById('globalSpeedLimitMB');
+	if (el) el.value = mb;
 }
 
 function renderSpeedLimitsEditor() {
@@ -1711,9 +1911,9 @@ function renderSpeedLimitsEditor() {
 	if (globalGroup) globalGroup.style.display = (mode === 'global' || mode === 'selected') ? 'block' : 'none';
 	if (clientsCard) clientsCard.style.opacity = (mode === 'selected' || mode === 'per_client') ? '1' : '0.45';
 	if (hintEl) {
-		if (mode === 'selected') hintEl.textContent = 'Отметьте клиентов, к которым применится общий лимит.';
-		else if (mode === 'per_client') hintEl.textContent = 'Укажите лимит в Кбит/с для каждого клиента (0 = без лимита).';
-		else hintEl.textContent = 'Выберите режим «Для выбранных» или «Индивидуально» для настройки по клиентам.';
+		if (mode === 'selected') hintEl.textContent = t('hint_sel');
+		else if (mode === 'per_client') hintEl.textContent = t('hint_per');
+		else hintEl.textContent = t('hint_none');
 	}
 
 	let selected = [];
@@ -1724,19 +1924,20 @@ function renderSpeedLimitsEditor() {
 	if (!box) return;
 	const validClients = allClientsList.filter(c => c.status === 'valid');
 	if (!validClients.length) {
-		box.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Нет активных клиентов</div>`;
+		box.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">${t('empty')}</div>`;
 		return;
 	}
 
 	box.innerHTML = validClients.map(c => {
 		const safeName = escapeHtml(c.name);
 		const dot = c.is_online ? '🟢' : '⚪';
+		const mbVal = c.speed_limit_kbps > 0 ? +(c.speed_limit_kbps / 8192).toFixed(2) : 0;
 		const cbHtml = mode === 'selected'
 			? `<input type="checkbox" class="limit-client-cb" data-client="${safeName}" ${selSet.has(c.name) ? 'checked' : ''}>`
 			: '';
 		const inputHtml = mode === 'per_client'
-			? `<input type="number" min="0" step="64" class="search-input limit-per-client-input" data-client="${safeName}" value="${c.speed_limit_kbps || 0}" placeholder="0" style="width:110px; padding:6px 10px; font-size:12.5px;"><span style="font-size:11px; color:var(--text-muted);">kbps</span>`
-			: `<span style="font-size:11.5px; color:var(--text-muted); font-family:'JetBrains Mono',monospace;">${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</span>`;
+			? `<input type="number" min="0" step="0.5" class="search-input limit-per-client-input" data-client="${safeName}" value="${mbVal}" placeholder="0" style="width:95px; padding:6px 10px; font-size:12.5px;"><span style="font-size:11px; color:var(--text-muted);">MB/s</span>`
+			: `<span style="font-size:11.5px; color:var(--text-muted); font-family:'JetBrains Mono',monospace;">${mbVal > 0 ? mbVal + ' MB/s' : '—'}</span>`;
 
 		return `
 			<div class="limit-row">
@@ -1753,10 +1954,13 @@ function renderSpeedLimitsEditor() {
 
 async function saveSpeedLimits() {
 	const mode = document.getElementById('speedLimitMode').value;
-	const globalKbps = parseInt(document.getElementById('globalSpeedLimitKbps').value) || 0;
+	const globalMb = parseFloat(document.getElementById('globalSpeedLimitMB').value) || 0;
+	const globalKbps = Math.round(globalMb * 8192);
 	const selectedClients = Array.from(document.querySelectorAll('.limit-client-cb:checked')).map(el => el.dataset.client);
 	const perClientLimits = {};
-	document.querySelectorAll('.limit-per-client-input').forEach(el => { perClientLimits[el.dataset.client] = parseInt(el.value) || 0; });
+	document.querySelectorAll('.limit-per-client-input').forEach(el => {
+		perClientLimits[el.dataset.client] = Math.round((parseFloat(el.value) || 0) * 8192);
+	});
 
 	const r = await fetch('/api/speed-limits', {
 		method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1885,11 +2089,11 @@ function updateClientCardsRealtime(speedsMap) {
 		const statusEl = document.getElementById(`card-online-${c.name}`);
 		if (statusEl) {
 			if (c.is_paused) {
-				statusEl.innerHTML = `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`;
+				statusEl.innerHTML = `<span style="color:var(--warning); font-weight:600;">${t('paused')}</span>`;
 			} else {
 				statusEl.innerHTML = c.is_online
-					? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>`
-					: `<span style="color:var(--text-muted);">⚪ Офлайн</span>`;
+					? `<span style="color:var(--success); font-weight:600;">${t('online')}</span>`
+					: `<span style="color:var(--text-muted);">${t('offline')}</span>`;
 			}
 		}
 
@@ -1927,7 +2131,7 @@ async function pollSpeedTick() {
 
 		const onlineCount = Object.keys(data.speeds).length;
 		document.getElementById('liveActiveCount').textContent = onlineCount;
-		document.getElementById('lastSyncTime').textContent = `Обновлено: ${timeStr}`;
+		document.getElementById('lastSyncTime').textContent = `${t('updated')} ${timeStr}`;
 
 		const validTotal = allClientsList.filter(c => c.status === 'valid').length;
 		if (validTotal > 0) {
@@ -2131,7 +2335,7 @@ async function loadRoutingView() {
 	document.getElementById('cidrUrlInput').value = d.cidr_url || '';
 	document.getElementById('customCidrsInput').value = d.custom_cidrs || '';
 	document.getElementById('routingModeSelect').value = d.routing_mode || 'off';
-	document.getElementById('wgText').textContent = d.wg_up ? 'АКТИВЕН' : 'ОТКЛЮЧЕН';
+	document.getElementById('wgText').textContent = d.wg_up ? t('wg_on') : t('wg_off');
 	document.getElementById('wgText').style.color = d.wg_up ? 'var(--success)' : 'var(--danger)';
 	document.getElementById('torrentBlockCheck').checked = Boolean(d.torrent_block);
 
@@ -2139,11 +2343,11 @@ async function loadRoutingView() {
 		document.getElementById('remoteEndpointConnected').style.display = 'block';
 		document.getElementById('remoteEndpointForm').style.display = 'none';
 		document.getElementById('remoteEndpointIp').textContent = d.wg_endpoint;
-		document.getElementById('remoteEndpointStatus').textContent = '🟢 ' + (d.wg_up ? 'Подключено' : 'Не активно');
+		document.getElementById('remoteEndpointStatus').textContent = d.wg_up ? t('remote_conn') : t('remote_inact');
 	} else {
 		document.getElementById('remoteEndpointConnected').style.display = 'none';
 		document.getElementById('remoteEndpointForm').style.display = 'block';
-		document.getElementById('remoteEndpointStatus').textContent = '⚪ Не настроено';
+		document.getElementById('remoteEndpointStatus').textContent = t('remote_none');
 	}
 	await loadSplitLinks();
 	await loadAdblockStatus();
@@ -2160,8 +2364,8 @@ function renderPendingLinks() {
 			<div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#93c5fd;">🔗 ${p.url} (${(p.ips || []).join(', ')})</div>
 			<div class="pending-actions">
 				<div class="route-via-group">
-					<button class="route-via-btn ${p.route_via === 'split' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'split')">🟡 Напрямую</button>
-					<button class="route-via-btn ${p.route_via === 'wg' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'wg')">🟣 Через WG</button>
+					<button class="route-via-btn ${p.route_via === 'split' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'split')">${t('direct')}</button>
+					<button class="route-via-btn ${p.route_via === 'wg' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'wg')">${t('via_wg')}</button>
 				</div>
 				<button class="btn btn-sm btn-primary" onclick="savePendingLink(${idx})">💾</button>
 				<button class="btn btn-sm btn-danger" onclick="cancelPendingLink(${idx})">✕</button>
@@ -2179,7 +2383,7 @@ async function savePendingLink(idx) {
 async function loadSplitLinks() {
 	const r = await fetch('/api/routing/links'); const d = await r.json(); const box = document.getElementById('splitLinksList');
 	if (!box) return;
-	box.innerHTML = (d.links || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} [${l.route_via.toUpperCase()}]</span><button class="btn btn-sm btn-danger" onclick="removeSplitLink(${l.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+	box.innerHTML = (d.links || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} [${l.route_via.toUpperCase()}]</span><button class="btn btn-sm btn-danger" onclick="removeSplitLink(${l.id})">✕</button></div>`).join('') || `<div style="padding:14px; text-align:center; color:var(--text-muted);">${t('no_records')}</div>`;
 }
 async function removeSplitLink(id) { await fetch(`/api/routing/links/${id}`, { method: 'DELETE' }); loadSplitLinks(); }
 async function resolveLink() {
@@ -2206,9 +2410,9 @@ async function setupRemoteTunnel() {
 async function loadAdblockStatus() {
 	const r = await fetch('/api/adblock/status'); const j = await r.json(); if (!j.success) return; const d = j.data;
 	document.getElementById('adblockEnableToggle').checked = Boolean(d.enabled);
-	document.getElementById('adblockStatusLabel').textContent = `Статус: ${d.enabled ? '🟢 АКТИВЕН' : '⚪ ОТКЛЮЧЕН'} | Правил: ${(d.blocked_total || 0).toLocaleString()} (DNS: ${d.dns_ip})`;
-	document.getElementById('adblockListsBox').innerHTML = (d.lists || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} (${l.domains_count})</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockList(${l.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Списков нет</div>';
-	document.getElementById('adblockDomainsBox').innerHTML = (d.domains || []).map(dom => `<div class="domain-row"><span class="domain-name">${dom.domain} [${dom.list_type}]</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockDomain(${dom.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Доменов нет</div>';
+	document.getElementById('adblockStatusLabel').textContent = `${t('adb_status')} ${d.enabled ? t('adb_on') : t('adb_off')} | ${t('adb_rules')} ${(d.blocked_total || 0).toLocaleString()} (DNS: ${d.dns_ip})`;
+	document.getElementById('adblockListsBox').innerHTML = (d.lists || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} (${l.domains_count})</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockList(${l.id})">✕</button></div>`).join('') || `<div style="padding:14px; text-align:center; color:var(--text-muted);">${t('no_lists')}</div>`;
+	document.getElementById('adblockDomainsBox').innerHTML = (d.domains || []).map(dom => `<div class="domain-row"><span class="domain-name">${dom.domain} [${dom.list_type}]</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockDomain(${dom.id})">✕</button></div>`).join('') || `<div style="padding:14px; text-align:center; color:var(--text-muted);">${t('no_domains')}</div>`;
 }
 async function toggleAdblock(enable) {
 	const r = await fetch('/api/adblock/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enable }) });
@@ -2253,7 +2457,7 @@ async function loadSettingsView() {
 		document.getElementById('setQuicBlock').checked = s.quic_block !== "0";
 		document.getElementById('setTorrentBlock').checked = s.torrent_block === "1";
 		document.getElementById('speedLimitMode').value = s.speed_limit_mode || 'none';
-		document.getElementById('globalSpeedLimitKbps').value = s.global_speed_limit_kbps || 0;
+		document.getElementById('globalSpeedLimitMB').value = s.global_speed_limit_kbps > 0 ? +(Number(s.global_speed_limit_kbps) / 8192).toFixed(2) : 0;
 	}
 }
 async function saveAllAccountSettings(applyToOvpn) {
@@ -2297,6 +2501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	initSpeedChart();
 	await loadSettingsView();
 	await loadClients();
+	applyLanguage(currentLang);
 	changePollInterval();
 	pollSystemStats();
 	setInterval(loadClients, 10000);

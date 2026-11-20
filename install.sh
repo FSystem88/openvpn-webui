@@ -307,8 +307,7 @@ if [[ "$INSTALL_OVPN" == "true" ]]; then
 	OVPN_PROTO="udp"
 	[[ "$PROTO_INPUT" == "2" ]] && OVPN_PROTO="tcp"
 
-	read -rp "Порт OpenVPN [1984]: " PORT_INPUT
-	OVPN_PORT=${PORT_INPUT:-1984}
+	OVPN_PORT="1194"
 
 	read -rp "DNS: 1) Системный  2) Google  3) Cloudflare [3]: " DNS_INPUT
 	DNS_INPUT=${DNS_INPUT:-3}
@@ -356,20 +355,21 @@ if [[ "$INSTALL_OVPN" == "true" ]]; then
 	IS_NAT=$(ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)' | head -n1 || true)
 
 	if [[ -n "$IS_NAT" ]]; then
-		printf "\n%s\n%s\n%s\n%s\n%s\n\n" \
+		printf "%s\n%s\n%s\n%s\n%s\n\n" \
 			"$OVPN_DOMAIN" \
 			"$PROTO_INPUT" \
 			"$OVPN_PORT" \
 			"$NYR_DNS" \
 			"$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
 	else
-		printf "\n%s\n%s\n%s\n%s\n\n" \
+		printf "%s\n%s\n%s\n%s\n\n" \
 			"$PROTO_INPUT" \
 			"$OVPN_PORT" \
 			"$NYR_DNS" \
 			"$FIRST_CLIENT" | bash /tmp/openvpn-install.sh
 	fi
 	rm -f /tmp/openvpn-install.sh
+	OVPN_PORT=$(grep -E '^\s*port\s+' "$SERVER_CONF" | awk '{print $2}' | head -n1 || echo "1194")
 fi
 
 # Конфигурация Management сокета и директорий OpenVPN

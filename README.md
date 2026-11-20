@@ -40,7 +40,7 @@
 
 * **⚡ Двустороннее ограничение скорости (`tc` HTB + `ifb0`):**
   * Шейпинг в обе стороны (Download и Upload) с режимами: без ограничений, для всех клиентов, для выбранных или индивидуально для каждого клиента.
-  * Быстрые пресеты скорости (`1`, `5`, `10`, `25`, `50 Мбит/с`) и автоматическое восстановление правил при пересоздании `tun0`.
+  * Быстрые пресеты скорости (`0.5`, `1`, `2`, `5`, `10 МБ/с`) и автоматическое восстановление правил при пересоздании `tun0`.
 
 * **📈 Мониторинг в реальном времени (1s):**
   * Ежесекундное обновление скорости (`↓ / ↑`), статуса и счётчика онлайна прямо в карточках клиентов и на живом графике через management-сокет OpenVPN.
@@ -169,7 +169,7 @@ server {
 
 ### 📄 Лицензия
 
-Проект распространяется под лицензией [MIT](https://www.google.com/search?q=LICENSE).
+Проект распространяется под лицензией [MIT](LICENSE).
 
 ---
 
@@ -177,7 +177,7 @@ server {
 
 # 🇬🇧 English
 
-| 📌 [Features](https://www.google.com/search?q=%23en-features) | 🧩 [Architecture](https://www.google.com/search?q=%23en-arch) | 🚀 [Install](https://www.google.com/search?q=%23en-install) | 🛠️ [Management](https://www.google.com/search?q=%23en-management) | 🔒 [Security](https://www.google.com/search?q=%23en-security) | 📄 [License](https://www.google.com/search?q=%23en-license) |
+| 📌 [Features](#-features) | 🧩 [Architecture](#-project-structure) | 🚀 [Install](#-quick-install) | 🛠️ [Management](#-management-menu) | 🔒 [Security](#-security) | 📄 [License](#-license) |
 | --- | --- | --- | --- | --- | --- |
 
 
@@ -197,7 +197,7 @@ server {
 
 * **⚡ Bidirectional Speed Limiting (`tc` HTB + `ifb0`):**
 * Download & Upload bandwidth shaping with modes: disabled, global, selected clients, or per-client.
-* Quick speed presets (`1`, `5`, `10`, `25`, `50 Mbps`) and automatic `tc` rule recovery if `tun0` restarts.
+* Quick speed presets (`0.5`, `1`, `2`, `5`, `10 MB/s`) and automatic `tc` rule recovery if `tun0` restarts.
 
 
 * **📈 1-Second Real-Time Telemetry:**
@@ -332,4 +332,4 @@ server {
 
 ### 📄 License
 
-Distributed under the [MIT](https://www.google.com/search?q=LICENSE) License.
+Distributed under the [MIT](LICENSE) License.
