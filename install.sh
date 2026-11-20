@@ -323,8 +323,14 @@ fi
 
 echo ""
 echo "--- Параметры Web UI ---"
-read -rp "Порт панели [8080]: " PANEL_PORT
-PANEL_PORT=${PANEL_PORT:-8080}
+while true; do
+	read -rp "Порт панели [8080]: " PANEL_PORT
+	PANEL_PORT=${PANEL_PORT:-8080}
+	if [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )); then
+		break
+	fi
+	echo "[-] Ошибка: порт должен быть числом от 1 до 65535."
+done
 
 read -rp "Логин администратора [admin]: " ADMIN_LOGIN
 ADMIN_LOGIN=${ADMIN_LOGIN:-admin}
