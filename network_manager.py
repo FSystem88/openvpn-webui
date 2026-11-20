@@ -1,10 +1,10 @@
-import asyncio
-import base64
-import ipaddress
 import os
+import base64
 import re
+import secrets
 import shutil
 import socket
+import struct
 import subprocess
 import time
 import urllib.request
@@ -15,7 +15,8 @@ from database import (
     ADBLOCK_DNS_IP,
     DNSMASQ_ADBLOCK_CONF,
     DNSMASQ_MAIN_CONF,
-    TUN_IFACE,
+    get_current_mgmt,
+    get_current_tun_iface,
     get_db,
     get_ovpn_subnet_cidr,
     get_setting,
@@ -65,12 +66,7 @@ class BackgroundTaskTracker:
     def finish(self, task_id: str, ok: bool = True, message: str = "") -> None:
         t = self._tasks.get(task_id)
         if not t:
-            t = {
-                "id": task_id,
-                "title": task_id,
-                "progress": 100 if ok else 0,
-                "message": "",
-            }
+            t = {"id": task_id, "title": task_id, "progress": 100 if ok else 0, "message": ""}
             self._tasks[task_id] = t
         t["status"] = "done" if ok else "error"
         t["progress"] = 100 if ok else t.get("progress", 0)
@@ -199,18 +195,22 @@ def ensure_dnsmasq_installed_sync(
 ) -> Tuple[bool, str]:
     try:
         if on_progress:
-            on_progress(15, "Проверка конфликтов DNS...")
+            on_progress(15, "Проверка DNS-служб...")
 
         if Path("/opt/AdGuardHome").exists() or Path("/etc/systemd/system/AdGuardHome.service").exists():
-            subprocess.run(
-                ["/opt/AdGuardHome/AdGuardHome", "-s", "uninstall"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            subprocess.run(["/opt/AdGuardHome/AdGuardHome", "-s", "uninstall"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["systemctl", "stop", "AdGuardHome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["systemctl", "disable", "AdGuardHome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             shutil.rmtree("/opt/AdGuardHome", ignore_errors=True)
             Path("/etc/systemd/system/AdGuardHome.service").unlink(missing_ok=True)
+
+        try:
+            socket.gethostbyname("archive.ubuntu.com")
+        except Exception:
+            resolv_p = Path("/etc/resolv.conf")
+            if resolv_p.is_symlink() or resolv_p.exists():
+                resolv_p.unlink(missing_ok=True)
+            resolv_p.write_text("nameserver 1.1.1.1\nnameserver 8.8.8.8\n", encoding="utf-8")
 
         if shutil.which("dnsmasq") is None:
             if on_progress:
@@ -226,10 +226,10 @@ def ensure_dnsmasq_installed_sync(
                 timeout=150,
             )
             if r.returncode != 0 and shutil.which("dnsmasq") is None:
-                return False, "Failed to install dnsmasq"
+                return False, "Не удалось установить пакет dnsmasq через apt"
 
         if on_progress:
-            on_progress(50, "Запись конфигурации dnsmasq...")
+            on_progress(50, "Настройка конфигурации dnsmasq...")
 
         for conflict_file in [
             Path("/etc/dnsmasq.d/ubuntu-fan"),
@@ -259,7 +259,7 @@ def ensure_dnsmasq_installed_sync(
         )
         DNSMASQ_MAIN_CONF.write_text(base_conf, encoding="utf-8")
         if not DNSMASQ_ADBLOCK_CONF.exists():
-            DNSMASQ_ADBLOCK_CONF.write_text("", encoding="utf-8")
+            DNSMASQ_ADBLOCK_CONF.write_text("# AdBlock rules\n", encoding="utf-8")
 
         subprocess.run(["systemctl", "enable", "dnsmasq"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["systemctl", "restart", "dnsmasq"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -270,16 +270,7 @@ def ensure_dnsmasq_installed_sync(
 
 def parse_adlist_content(raw_text: str) -> List[str]:
     domains = set()
-    ignore = {
-        "localhost",
-        "localhost.localdomain",
-        "local",
-        "broadcasthost",
-        "ip6-localhost",
-        "ip6-loopback",
-        "0.0.0.0",
-        "127.0.0.1",
-    }
+    ignore = {"localhost", "localhost.localdomain", "local", "broadcasthost", "ip6-localhost", "ip6-loopback", "0.0.0.0", "127.0.0.1"}
     domain_re = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$")
 
     for line in raw_text.splitlines():
@@ -312,19 +303,64 @@ def parse_adlist_content(raw_text: str) -> List[str]:
 
 def fetch_and_parse_adlist(url: str) -> Tuple[bool, List[str], str]:
     try:
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "Mozilla/5.0 (OpenVPN-Panel-AdBlock)"}
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (OpenVPN-Panel-AdBlock)"})
         with urllib.request.urlopen(req, timeout=20) as resp:
             raw = resp.read(100 * 1024 * 1024).decode("utf-8", errors="ignore")
         if "<html" in raw[:500].lower():
-            return False, [], "Invalid list content"
+            return False, [], "Ссылка возвращает HTML-страницу вместо текстового списка доменов"
         domains = parse_adlist_content(raw)
         if not domains:
-            return False, [], "No valid domains"
+            return False, [], "В списке не найдено ни одного корректного домена"
         return True, domains, "OK"
     except Exception as e:
-        return False, [], str(e)
+        return False, [], f"Ошибка скачивания списка: {e}"
+
+
+def query_local_dns_a_record(domain: str, dns_ip: str, timeout: float = 2.5) -> Optional[str]:
+    try:
+        tid = secrets.randbits(16)
+        header = struct.pack(">HHHHHH", tid, 0x0100, 1, 0, 0, 0)
+        qname = b"".join(struct.pack("B", len(p)) + p.encode("ascii") for p in domain.strip(".").split(".")) + b"\x00"
+        packet = header + qname + struct.pack(">HH", 1, 1)
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(timeout)
+        try:
+            sock.sendto(packet, (dns_ip, 53))
+            data, _ = sock.recvfrom(1024)
+        finally:
+            sock.close()
+
+        if len(data) < 12:
+            return None
+        ancount = struct.unpack(">H", data[6:8])[0]
+        if ancount == 0:
+            return "NXDOMAIN"
+
+        pos = 12
+        while pos < len(data) and data[pos] != 0:
+            pos += 1 + data[pos]
+        pos += 5
+
+        for _ in range(ancount):
+            if pos >= len(data):
+                break
+            if (data[pos] & 0xC0) == 0xC0:
+                pos += 2
+            else:
+                while pos < len(data) and data[pos] != 0:
+                    pos += 1 + data[pos]
+                pos += 1
+            if pos + 10 > len(data):
+                break
+            rtype, _, _, rdlen = struct.unpack(">HHIH", data[pos : pos + 10])
+            pos += 10
+            if rtype == 1 and rdlen == 4 and pos + 4 <= len(data):
+                return socket.inet_ntoa(data[pos : pos + 4])
+            pos += rdlen
+        return "NO_A_RECORD"
+    except Exception:
+        return None
 
 
 def rebuild_dnsmasq_adblock_conf_sync(
@@ -336,12 +372,8 @@ def rebuild_dnsmasq_adblock_conf_sync(
 
     adblock_on = get_setting("adblock_enabled", "0") == "1"
     if not adblock_on:
-        DNSMASQ_ADBLOCK_CONF.write_text("", encoding="utf-8")
-        subprocess.run(
-            ["systemctl", "kill", "-s", "SIGHUP", "dnsmasq"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        DNSMASQ_ADBLOCK_CONF.write_text("# AdBlock disabled\n", encoding="utf-8")
+        subprocess.run(["systemctl", "kill", "-s", "SIGHUP", "dnsmasq"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True, 0, "OK"
 
     if on_progress:
@@ -360,13 +392,7 @@ def rebuild_dnsmasq_adblock_conf_sync(
         cache_file = cache_dir / f"list_{row['id']}.txt"
         if cache_file.exists():
             try:
-                doms = [
-                    line.strip()
-                    for line in cache_file.read_text(
-                        encoding="utf-8", errors="ignore"
-                    ).splitlines()
-                    if line.strip()
-                ]
+                doms = [line.strip() for line in cache_file.read_text(encoding="utf-8", errors="ignore").splitlines() if line.strip()]
                 if row["list_type"] == "white":
                     white_set.update(doms)
                 else:
@@ -385,48 +411,23 @@ def rebuild_dnsmasq_adblock_conf_sync(
     if on_progress:
         on_progress(80, f"Запись {len(final_black)} правил в dnsmasq...")
 
-    lines = [f"address=/{dom}/0.0.0.0" for dom in final_black]
-    DNSMASQ_ADBLOCK_CONF.write_text(
-        "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8"
-    )
-    subprocess.run(
-        ["systemctl", "restart", "dnsmasq"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    lines = ["# Auto-generated by OpenVPN Panel AdBlock"]
+    for dom in final_black:
+        lines.append(f"address=/{dom}/0.0.0.0")
+
+    DNSMASQ_ADBLOCK_CONF.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    subprocess.run(["systemctl", "restart", "dnsmasq"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return True, len(final_black), "OK"
 
 
 def apply_dns_redirect_iptables_sync(enable: bool, dns_ip: str) -> None:
+    tun_iface = get_current_tun_iface()
     for proto in ("udp", "tcp"):
-        rule = [
-            "PREROUTING",
-            "-i",
-            TUN_IFACE,
-            "-p",
-            proto,
-            "--dport",
-            "53",
-            "-j",
-            "REDIRECT",
-            "--to-ports",
-            "53",
-        ]
-        while (
-            subprocess.run(
-                ["iptables", "-t", "nat", "-D"] + rule,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            ).returncode
-            == 0
-        ):
+        rule = ["PREROUTING", "-i", tun_iface, "-p", proto, "--dport", "53", "-j", "REDIRECT", "--to-ports", "53"]
+        while subprocess.run(["iptables", "-t", "nat", "-D"] + rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
             pass
         if enable:
-            subprocess.run(
-                ["iptables", "-t", "nat", "-I", "PREROUTING", "1"] + rule[1:],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            subprocess.run(["iptables", "-t", "nat", "-I", "PREROUTING", "1"] + rule[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def apply_adblock_state_sync(
@@ -442,7 +443,7 @@ def apply_adblock_state_sync(
         return False, msg
 
     if on_progress:
-        on_progress(90, "Обновление правил iptables и OpenVPN...")
+        on_progress(90, "Применение правил iptables и OpenVPN...")
 
     apply_dns_redirect_iptables_sync(enable, dns_ip)
     ok_conf, msg_conf = sync_openvpn_server_conf_from_settings(restart_service=True)
@@ -456,89 +457,47 @@ def apply_adblock_state_sync(
 
 
 # ============================================================
-# ТОРРЕНТЫ, IPSET И WIREGUARD СПЛИТ-ТУННЕЛЬ
+# QUIC / TORRENT BLOCK & WIREGUARD SPLIT TUNNEL
 # ============================================================
+
+def apply_quic_block_sync(enable: bool) -> None:
+    subnet_cidr = get_ovpn_subnet_cidr()
+    rule = [
+        "FORWARD", "-s", subnet_cidr, "-p", "udp", "--dport", "443",
+        "-j", "REJECT", "--reject-with", "icmp-port-unreachable",
+    ]
+    old_rule = ["FORWARD", "-s", subnet_cidr, "-p", "udp", "--dport", "443", "-j", "REJECT"]
+    try:
+        while subprocess.run(["iptables", "-D"] + old_rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            pass
+        chk = subprocess.run(["iptables", "-C"] + rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if enable and chk.returncode != 0:
+            subprocess.run(["iptables", "-I", "FORWARD", "1"] + rule[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif not enable and chk.returncode == 0:
+            subprocess.run(["iptables", "-D"] + rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
 
 def apply_torrent_block_sync(enable: bool) -> None:
     subnet_cidr = get_ovpn_subnet_cidr()
-    safe_signatures = [
-        "BitTorrent protocol",
-        "peer_id=",
-        "info_hash",
-        "announce.php?passkey=",
-    ]
+    safe_signatures = ["BitTorrent protocol", "peer_id=", "info_hash", "announce.php?passkey="]
     for s in safe_signatures:
-        rule_tcp = [
-            "FORWARD",
-            "-s",
-            subnet_cidr,
-            "-p",
-            "tcp",
-            "!",
-            "--dport",
-            "443",
-            "-m",
-            "string",
-            "--algo",
-            "bm",
-            "--to",
-            "180",
-            "--string",
-            s,
-            "-j",
-            "DROP",
-        ]
-        rule_udp = [
-            "FORWARD",
-            "-s",
-            subnet_cidr,
-            "-p",
-            "udp",
-            "!",
-            "--dport",
-            "443",
-            "-m",
-            "string",
-            "--algo",
-            "bm",
-            "--to",
-            "180",
-            "--string",
-            s,
-            "-j",
-            "DROP",
-        ]
-        for rule in (rule_tcp, rule_udp):
-            chk = subprocess.run(
-                ["iptables", "-C"] + rule,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+        for proto in ("tcp", "udp"):
+            rule = [
+                "FORWARD", "-s", subnet_cidr, "-p", proto, "!", "--dport", "443",
+                "-m", "string", "--algo", "bm", "--to", "180", "--string", s, "-j", "DROP",
+            ]
+            chk = subprocess.run(["iptables", "-C"] + rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if enable and chk.returncode != 0:
-                subprocess.run(
-                    ["iptables", "-I", "FORWARD", "1"] + rule[1:],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
+                subprocess.run(["iptables", "-I", "FORWARD", "1"] + rule[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             elif not enable and chk.returncode == 0:
-                subprocess.run(
-                    ["iptables", "-D"] + rule,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
+                subprocess.run(["iptables", "-D"] + rule, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def reload_ipset_sync() -> None:
-    for set_name, max_elem in (
-        ("ru_ips", "262144"),
-        ("force_wg_ips", "65536"),
-        ("force_direct_ips", "65536"),
-    ):
-        subprocess.run(
-            ["ipset", "create", set_name, "hash:net", "maxelem", max_elem, "-exist"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+    for set_name, max_elem in (("ru_ips", "262144"), ("force_wg_ips", "65536"), ("force_direct_ips", "65536")):
+        subprocess.run(["ipset", "create", set_name, "hash:net", "maxelem", max_elem, "-exist"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     ru_file = Path("/etc/wireguard/ru.txt")
     custom_raw = get_setting("custom_cidrs")
@@ -562,13 +521,9 @@ def reload_ipset_sync() -> None:
 
     try:
         with get_db() as conn:
-            rows = conn.execute(
-                "SELECT resolved_ip, route_via FROM split_links"
-            ).fetchall()
+            rows = conn.execute("SELECT resolved_ip, route_via FROM split_links").fetchall()
             for r in rows:
-                target_list = (
-                    force_wg_nets if r["route_via"] == "wg" else force_direct_nets
-                )
+                target_list = force_wg_nets if r["route_via"] == "wg" else force_direct_nets
                 for ip in re.split(r"[,\s]+", r["resolved_ip"] or ""):
                     ip = ip.strip()
                     if ip and cidr_re.match(ip):
@@ -585,12 +540,7 @@ def reload_ipset_sync() -> None:
         if items:
             payload += "\n".join(f"add {tmp} {n} -exist" for n in set(items)) + "\n"
         payload += f"swap {tmp} {name}\ndestroy {tmp}\n"
-        subprocess.run(
-            ["ipset", "restore"],
-            input=payload.encode("utf-8"),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        subprocess.run(["ipset", "restore"], input=payload.encode("utf-8"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     _apply_set("ru_ips", nets, 262144)
     _apply_set("force_wg_ips", force_wg_nets, 65536)
@@ -600,16 +550,8 @@ def reload_ipset_sync() -> None:
 def apply_routing_mode_sync(mode: str) -> None:
     wg_conf_path = Path("/etc/wireguard/wg0.conf")
     if mode == "off":
-        subprocess.run(
-            ["systemctl", "stop", "wg-quick@wg0"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        subprocess.run(
-            ["systemctl", "disable", "wg-quick@wg0"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        subprocess.run(["systemctl", "stop", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["systemctl", "disable", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return
 
     if not wg_conf_path.exists():
@@ -619,16 +561,10 @@ def apply_routing_mode_sync(mode: str) -> None:
     ru_priv_m = re.search(r"PrivateKey\s*=\s*(.+)", conf)
     remote_pub_m = re.search(r"PublicKey\s*=\s*(.+)", conf)
     endpoint_m = re.search(r"Endpoint\s*=\s*(.+)", conf)
-
     if not (ru_priv_m and remote_pub_m and endpoint_m):
         return
 
-    subprocess.run(
-        ["systemctl", "stop", "wg-quick@wg0"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-
+    subprocess.run(["systemctl", "stop", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     reload_ipset_sync()
 
     subnet_cidr = get_ovpn_subnet_cidr()
@@ -637,37 +573,20 @@ def apply_routing_mode_sync(mode: str) -> None:
         f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set force_wg_ips dst -j MARK --set-mark 0x1",
         f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set force_wg_ips dst -j ACCEPT",
     ]
-    priority_rules_del = [
-        r.replace("-A PREROUTING", "-D PREROUTING") for r in priority_rules
-    ]
+    priority_rules_del = [r.replace("-A PREROUTING", "-D PREROUTING") for r in priority_rules]
 
     if mode == "all":
-        base_rules = [
-            f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"
-        ]
-        base_rules_del = [
-            f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"
-        ]
+        base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"]
     elif mode == "cidr_wg":
-        base_rules = [
-            f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"
-        ]
-        base_rules_del = [
-            f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"
-        ]
+        base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"]
     else:
-        base_rules = [
-            f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"
-        ]
-        base_rules_del = [
-            f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"
-        ]
+        base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"]
 
     all_mangle_up = "\n".join(f"PostUp = {r}" for r in (priority_rules + base_rules))
-    all_mangle_down = "\n".join(
-        f"PostDown = {r}" for r in (priority_rules_del + base_rules_del)
-    )
-
+    all_mangle_down = "\n".join(f"PostDown = {r}" for r in (priority_rules_del + base_rules_del))
     mss_up = "iptables -t mangle -I FORWARD 1 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
     mss_down = "iptables -t mangle -D FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
 
@@ -695,17 +614,8 @@ PersistentKeepalive = 25
 """
     wg_conf_path.write_text(ru_conf, encoding="utf-8")
     os.chmod(wg_conf_path, 0o600)
-
-    subprocess.run(
-        ["systemctl", "enable", "wg-quick@wg0"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    subprocess.run(
-        ["systemctl", "start", "wg-quick@wg0"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    subprocess.run(["systemctl", "enable", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["systemctl", "start", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def setup_remote_tunnel_sync(
@@ -715,10 +625,6 @@ def setup_remote_tunnel_sync(
 ) -> Tuple[bool, str]:
     if not paramiko:
         return False, "paramiko not installed"
-    try:
-        ipaddress.ip_address(remote_ip)
-    except ValueError:
-        return False, "Invalid remote IP address"
 
     def _run_ssh(ssh_client: Any, cmd: str) -> str:
         _, stdout, _ = ssh_client.exec_command(cmd)
@@ -728,26 +634,11 @@ def setup_remote_tunnel_sync(
     try:
         if on_progress:
             on_progress(15, "Подготовка SSH-ключа...")
-
         if not os.path.exists("/root/.ssh/id_ed25519"):
             os.makedirs("/root/.ssh", exist_ok=True)
-            subprocess.run(
-                [
-                    "ssh-keygen",
-                    "-t",
-                    "ed25519",
-                    "-f",
-                    "/root/.ssh/id_ed25519",
-                    "-N",
-                    "",
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-            )
+            subprocess.run(["ssh-keygen", "-t", "ed25519", "-f", "/root/.ssh/id_ed25519", "-N", ""], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
         pub_key = Path("/root/.ssh/id_ed25519.pub").read_text(encoding="utf-8").strip()
-
         if on_progress:
             on_progress(35, f"Подключение к {remote_ip}...")
 
@@ -758,11 +649,7 @@ def setup_remote_tunnel_sync(
         try:
             if on_progress:
                 on_progress(55, "Установка WireGuard на удалённом сервере...")
-
-            _run_ssh(
-                client,
-                "mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
-            )
+            _run_ssh(client, "mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys")
             sftp = client.open_sftp()
             try:
                 with sftp.open("/root/.ssh/authorized_keys", "a") as f:
@@ -770,31 +657,15 @@ def setup_remote_tunnel_sync(
             finally:
                 sftp.close()
 
-            _run_ssh(
-                client,
-                "sysctl -w net.ipv4.ip_forward=1 && sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf && echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf",
-            )
-            _run_ssh(
-                client,
-                "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard iptables",
-            )
+            _run_ssh(client, "sysctl -w net.ipv4.ip_forward=1 && sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf && echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf")
+            _run_ssh(client, "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard iptables")
 
-            ext_iface = _run_ssh(
-                client,
-                "ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1); exit}'",
-            )
-            if not ext_iface:
-                ext_iface = "eth0"
-
+            ext_iface = _run_ssh(client, "ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1); exit}'") or "eth0"
             remote_priv = _run_ssh(client, "wg genkey")
             remote_pub = _run_ssh(client, f"echo '{remote_priv}' | wg pubkey")
 
             ru_priv = subprocess.check_output(["wg", "genkey"]).decode().strip()
-            ru_pub = (
-                subprocess.check_output(["wg", "pubkey"], input=ru_priv.encode())
-                .decode()
-                .strip()
-            )
+            ru_pub = subprocess.check_output(["wg", "pubkey"], input=ru_priv.encode()).decode().strip()
 
             subnet_cidr = get_ovpn_subnet_cidr()
             remote_conf = f"""[Interface]
@@ -820,20 +691,13 @@ PublicKey = {ru_pub}
 AllowedIPs = {subnet_cidr}, 10.200.0.1/32
 """
             b64_conf = base64.b64encode(remote_conf.encode()).decode()
-            _run_ssh(
-                client,
-                f"mkdir -p /etc/wireguard && echo '{b64_conf}' | base64 -d > /etc/wireguard/wg0.conf",
-            )
-            _run_ssh(
-                client,
-                "chmod 600 /etc/wireguard/wg0.conf && systemctl enable wg-quick@wg0 && systemctl restart wg-quick@wg0",
-            )
+            _run_ssh(client, f"mkdir -p /etc/wireguard && echo '{b64_conf}' | base64 -d > /etc/wireguard/wg0.conf")
+            _run_ssh(client, "chmod 600 /etc/wireguard/wg0.conf && systemctl enable wg-quick@wg0 && systemctl restart wg-quick@wg0")
         finally:
             client.close()
 
         if on_progress:
-            on_progress(80, "Запуск локального интерфейса wg0...")
-
+            on_progress(80, "Запуск локального wg0...")
         os.makedirs("/etc/wireguard", exist_ok=True)
         ru_conf = f"""[Interface]
 Address = 10.200.0.1/30
@@ -850,16 +714,8 @@ PersistentKeepalive = 25
         Path("/etc/wireguard/wg0.conf").write_text(ru_conf, encoding="utf-8")
         os.chmod("/etc/wireguard/wg0.conf", 0o600)
 
-        subprocess.run(
-            ["systemctl", "stop", "wg-quick@wg0"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        subprocess.run(
-            ["ip", "link", "del", "dev", "wg0"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        subprocess.run(["systemctl", "stop", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["ip", "link", "del", "dev", "wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         mode = get_setting("routing_mode") or "split"
         set_setting("routing_mode", mode)
@@ -874,6 +730,7 @@ PersistentKeepalive = 25
 
 def ensure_system_configs() -> None:
     parse_existing_server_conf_into_db()
+    apply_quic_block_sync(get_setting("quic_block", "1") == "1")
     apply_torrent_block_sync(get_setting("torrent_block", "0") == "1")
 
     if get_setting("adblock_enabled", "0") == "1":
@@ -890,12 +747,9 @@ def ensure_system_configs() -> None:
             with SERVER_CONF_PATH.open("a", encoding="utf-8") as f:
                 f.write(f"\nclient-config-dir {CCD_DIR}\n")
         if not re.search(r"^\s*management\s+", content, re.MULTILINE):
+            m_host, m_port = get_current_mgmt()
             with SERVER_CONF_PATH.open("a", encoding="utf-8") as f:
-                f.write("\nmanagement 127.0.0.1 7505\n")
-            subprocess.run(
-                ["systemctl", "reload-or-restart", "openvpn-server@server"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+                f.write(f"\nmanagement {m_host} {m_port}\n")
+            subprocess.run(["systemctl", "reload-or-restart", "openvpn-server@server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass

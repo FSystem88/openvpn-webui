@@ -83,7 +83,7 @@ MAIN_HTML = r"""
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<title>OpenVPN Control Center</title>
+	<title>OpenVPN Control Center Ultimate</title>
 	<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -169,25 +169,39 @@ MAIN_HTML = r"""
 			color: #ffffff !important;
 		}
 		[data-theme="light"] .tab-btn:hover,
-		[data-theme="light"] .btn-group-btn:hover {
+		[data-theme="light"] .btn-group-btn:hover,
+		[data-theme="light"] .route-via-btn:hover {
 			background: #e2e8f0;
 			color: #0f172a;
 		}
 		[data-theme="light"] .tab-btn.active,
 		[data-theme="light"] .page-btn.active,
-		[data-theme="light"] .btn-group-btn.active {
+		[data-theme="light"] .btn-group-btn.active,
+		[data-theme="light"] .d-tab-btn.active,
+		[data-theme="light"] .route-via-btn.active {
 			color: #ffffff !important;
 		}
 		[data-theme="light"] .client-name,
 		[data-theme="light"] .chart-wrapper h3,
 		[data-theme="light"] .settings-card h3,
 		[data-theme="light"] .modal-card h2,
-		[data-theme="light"] .switch-info strong {
+		[data-theme="light"] .switch-info strong,
+		[data-theme="light"] .routing-spoiler summary {
 			color: #0f172a !important;
 		}
 		[data-theme="light"] .modal-card {
 			background: #ffffff;
 			border-color: #cbd5e1;
+		}
+		[data-theme="light"] .domain-row:hover {
+			background: #f1f5f9;
+		}
+		[data-theme="light"] .domain-name {
+			color: #1d4ed8;
+		}
+		[data-theme="light"] .domain-count-badge {
+			color: #1d4ed8;
+			background: rgba(37, 99, 235, 0.12);
 		}
 		[data-theme="light"] .session-meta {
 			color: #334155;
@@ -234,6 +248,7 @@ MAIN_HTML = r"""
 			background-clip: padding-box;
 		}
 		*::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); background-clip: padding-box; }
+		*::-webkit-scrollbar-corner { background: transparent; }
 
 		.container { max-width: 1440px; margin: 0 auto; }
 
@@ -316,7 +331,7 @@ MAIN_HTML = r"""
 			color: #fcd34d;
 		}
 		.btn-warning:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-		.btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
+		.btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 6px; }
 
 		.lang-select, .control-select {
 			padding: 9px 14px;
@@ -347,14 +362,11 @@ MAIN_HTML = r"""
 			border: 1px solid rgba(59, 130, 246, 0.45);
 			border-radius: var(--radius-md);
 			padding: 12px 18px;
-			margin-bottom: 18px;
+			margin-bottom: 20px;
 			box-shadow: var(--shadow-sm);
 		}
 		.task-progress-banner.active { display: block; }
-		.task-progress-top {
-			display: flex; justify-content: space-between; align-items: center;
-			font-size: 12.5px; margin-bottom: 8px; gap: 10px;
-		}
+		.task-progress-top { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 8px; gap: 10px; }
 		.progress-track { width: 100%; height: 7px; background: var(--bg-input); border-radius: 99px; overflow: hidden; }
 		.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 0.25s ease; }
 
@@ -517,19 +529,24 @@ MAIN_HTML = r"""
 			display: none;
 			align-items: center;
 			justify-content: center;
+			transition: all 0.15s ease;
+			line-height: 1;
 		}
-		.textarea-input { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 12.5px; line-height: 1.6; resize: vertical; }
+		.search-clear-btn:hover { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+		.textarea-input {
+			font-family: 'JetBrains Mono', 'SF Mono', monospace;
+			font-size: 12.5px;
+			line-height: 1.6;
+			resize: vertical;
+		}
 
 		.clients-grid {
 			display: grid;
 			grid-template-columns: repeat(4, 1fr);
 			gap: 14px;
-			align-items: start;
 		}
 		@media (max-width: 1400px) { .clients-grid { grid-template-columns: repeat(3, 1fr); } }
 		@media (max-width: 1000px) { .clients-grid { grid-template-columns: repeat(2, 1fr); } }
-		@media (max-width: 680px) { .clients-grid { grid-template-columns: 1fr; } }
-
 		.client-card {
 			background: var(--bg-card);
 			border: 1px solid var(--border-subtle);
@@ -594,7 +611,7 @@ MAIN_HTML = r"""
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
-		.card-details { font-size: 12px; color: var(--text-dim); line-height: 1.55; margin-bottom: 8px; }
+		.card-details { font-size: 12px; color: var(--text-dim); line-height: 1.55; margin-bottom: 10px; }
 		.session-meta {
 			background: rgba(16, 185, 129, 0.05);
 			border: 1px solid rgba(16, 185, 129, 0.18);
@@ -606,15 +623,9 @@ MAIN_HTML = r"""
 		}
 		.session-meta.offline-meta { background: var(--bg-input); border-color: var(--border-subtle); color: var(--text-muted); }
 		.session-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+		.session-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 		.session-row strong { font-family: 'JetBrains Mono', monospace; color: #e2e8f0; font-weight: 600; }
-		.live-speed-row {
-			display: flex;
-			justify-content: space-between;
-			margin-top: 6px;
-			font-weight: 600;
-			font-family: 'JetBrains Mono', monospace;
-			font-size: 11.5px;
-		}
+		.live-speed-row { display: flex; justify-content: space-between; margin-top: 6px; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
 		.card-traffic {
 			background: var(--bg-input);
 			border: 1px solid var(--border-subtle);
@@ -629,13 +640,12 @@ MAIN_HTML = r"""
 		}
 		.traffic-main { font-weight: 600; color: var(--text-main); }
 		.traffic-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
-
 		.card-extra-meta {
 			margin-top: 8px;
 			padding: 7px 10px;
 			background: var(--bg-input);
 			border: 1px solid var(--border-subtle);
-			border-radius: 8px;
+			border-radius: var(--radius-sm);
 			font-size: 11px;
 			color: var(--text-dim);
 		}
@@ -671,89 +681,218 @@ MAIN_HTML = r"""
 			min-width: 36px; height: 36px; padding: 0 10px; border-radius: var(--radius-sm);
 			border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-main);
 			font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex;
-			align-items: center; justify-content: center;
+			align-items: center; justify-content: center; transition: all 0.15s; font-family: inherit;
 		}
-		.page-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: transparent; color: #fff; }
+		.page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: rgba(59, 130, 246, 0.08); }
+		.page-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: transparent; color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+		.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-		.chart-wrapper, .settings-card {
+		.chart-wrapper {
 			background: var(--bg-card);
 			border: 1px solid var(--border-subtle);
 			border-radius: var(--radius-lg);
 			padding: 24px;
 			box-shadow: var(--shadow-sm);
 		}
-		.chart-wrapper h3, .settings-card h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+		.chart-wrapper h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 		.chart-toolbar { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+		.chart-toolbar h3 { margin-bottom: 4px; }
+		.chart-toolbar p { font-size: 12.5px; color: var(--text-muted); }
 		.chart-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 		.btn-group { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--bg-input); }
-		.btn-group-btn { background: transparent; border: none; padding: 9px 16px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; font-weight: 600; }
+		.btn-group-btn {
+			background: transparent; border: none; padding: 9px 16px; font-size: 12.5px; color: var(--text-muted);
+			cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--border-subtle); font-weight: 600; font-family: inherit;
+		}
+		.btn-group-btn:last-child { border-right: none; }
+		.btn-group-btn:hover { color: var(--text-main); background: #1e293b; }
 		.btn-group-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
-		.chart-canvas-box { position: relative; height: 400px; width: 100%; margin-bottom: 20px; }
+		.chart-canvas-box { position: relative; height: 420px; width: 100%; margin-bottom: 20px; }
 		.chart-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 		.stat-pill {
-			background: var(--bg-input); border: 1px solid var(--border-subtle);
-			padding: 14px 18px; border-radius: var(--radius-md); font-size: 12.5px; color: var(--text-muted);
+			background: var(--bg-input); border: 1px solid var(--border-subtle); padding: 14px 18px;
+			border-radius: var(--radius-md); font-size: 12.5px; color: var(--text-muted);
 			display: flex; justify-content: space-between; align-items: center; gap: 12px;
 		}
 		.stat-pill strong { color: var(--text-main); font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 
-		.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
-		.routing-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; align-items: start; }
-		.routing-grid-left { display: flex; flex-direction: column; gap: 20px; }
-		@media (max-width: 960px) { .routing-grid { grid-template-columns: 1fr; } }
+		.settings-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+			gap: 20px;
+			align-items: stretch;
+		}
+		.settings-card {
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-lg);
+			padding: 24px;
+			box-shadow: var(--shadow-sm);
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+			min-width: 0;
+			overflow: hidden;
+		}
+		.settings-card > * { min-width: 0; max-width: 100%; }
+		.settings-card h3 { font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+		.settings-card .card-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+		.settings-card input:not([type="checkbox"]), .settings-card select, .settings-card textarea { max-width: 100%; width: 100%; }
+		.limit-client-cb { width: 18px !important; height: 18px !important; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+		.speed-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+		.preset-btn {
+			padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+			background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-dim);
+			cursor: pointer; transition: all 0.15s;
+		}
+		.preset-btn:hover { border-color: var(--primary); color: var(--text-main); background: rgba(59, 130, 246, 0.12); }
+		.limit-row {
+			display: flex; justify-content: space-between; align-items: center; gap: 12px;
+			padding: 10px 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+		}
+		.limit-row:last-child { border-bottom: none; }
+		.limit-row-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+		.limit-row-name { font-weight: 600; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.limit-row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-		.form-group { margin-bottom: 12px; }
+		.form-group { margin-bottom: 0; min-width: 0; }
 		.form-label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 		.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 		.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-		@media (max-width: 640px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } }
 
 		.switch-row {
-			background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-			padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 12px;
+			background: var(--bg-input);
+			border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md);
+			padding: 12px 16px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 14px;
+			transition: border-color 0.15s;
 		}
-		.switch-info strong { font-size: 13px; display: block; color: #f1f5f9; margin-bottom: 3px; font-weight: 600; }
-		.switch-info span { font-size: 11.5px; color: var(--text-muted); display: block; }
-		.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+		.switch-row:hover { border-color: #334155; }
+		.switch-info { flex: 1; min-width: 0; }
+		.switch-info strong { font-size: 13px; display: block; color: #f1f5f9; margin-bottom: 3px; font-weight: 600; line-height: 1.35; }
+		.switch-info span { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; display: block; }
+		.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
 		.toggle-switch input { opacity: 0; width: 0; height: 0; }
-		.toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 24px; cursor: pointer; transition: 0.2s; }
+		.toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 24px; transition: 0.2s; }
 		.toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
 		.toggle-switch input:checked + .toggle-slider { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 		.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-		.domains-list-box { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px; }
-		.domain-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; gap: 8px; border-bottom: 1px solid rgba(148,163,184,0.08); }
-		.domain-row:last-child { border-bottom: none; }
-		.domain-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #93c5fd; word-break: break-all; }
-
 		.modal-overlay {
 			display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
-			backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; padding: 14px;
+			backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; padding: 14px; animation: fadeIn 0.15s ease;
 		}
 		.modal-overlay.active { display: flex; }
 		.modal-card {
-			background: var(--bg-card); border: 1px solid var(--border-subtle);
-			border-radius: var(--radius-xl); padding: 26px; max-width: 460px; width: 100%; box-shadow: var(--shadow-lg);
+			background: #0f172a; border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+			padding: 28px; max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); max-height: 90vh;
+			display: flex; flex-direction: column; overflow: hidden;
 		}
+		.modal-card.modal-lg { max-width: 760px; }
 		.modal-card h2 { font-size: 19px; margin-bottom: 6px; font-weight: 700; color: #fff; }
-		.modal-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+		.modal-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+
+		.domains-tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--bg-input); padding: 5px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+		.d-tab-btn { background: transparent; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.15s; flex: 1; }
+		.d-tab-btn:hover { color: var(--text-main); }
+		.d-tab-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
+		.d-tab-view { display: none; flex: 1; overflow-y: auto; max-height: 380px; padding-right: 4px; }
+		.d-tab-view.active { display: block; }
+
+		.domains-list-box { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px; }
+		.domain-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 6px; font-size: 13px; gap: 10px; transition: background 0.15s; }
+		.domain-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+		.domain-row-meta { display: flex; align-items: center; gap: 12px; }
+		.domain-row:hover { background: #1e293b; }
+		.domain-name { font-family: 'JetBrains Mono', monospace; color: #93c5fd; word-break: break-all; font-weight: 500; font-size: 12.5px; }
+		.domain-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+		.domain-count-badge { font-size: 10.5px; padding: 2px 7px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
 
 		.toast {
-			position: fixed; bottom: 30px; right: 30px; background: #1e293b;
-			border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-			padding: 14px 20px; font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow-lg);
-			transform: translateY(20px); opacity: 0; transition: all 0.3s ease; z-index: 2000; pointer-events: none;
+			position: fixed; bottom: 30px; right: 30px; background: #1e293b; border: 1px solid var(--border-subtle);
+			border-radius: var(--radius-md); padding: 14px 20px; font-size: 13.5px; font-weight: 500;
+			box-shadow: var(--shadow-lg); transform: translateY(20px); opacity: 0;
+			transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 2000; pointer-events: none; max-width: 380px;
 		}
 		.toast.show { transform: translateY(0); opacity: 1; }
 		.toast.success { border-left: 4px solid var(--success); }
 		.toast.error { border-left: 4px solid var(--danger); }
 
+		.routing-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start; }
+		.routing-grid-left { display: flex; flex-direction: column; gap: 20px; }
+		.routing-spoiler { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px 14px; margin-top: 6px; transition: all 0.2s; }
+		.routing-spoiler[open] { border-color: rgba(59, 130, 246, 0.3); }
+		.routing-spoiler summary { font-size: 13px; font-weight: 600; color: #f1f5f9; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; outline: none; }
+		.routing-spoiler summary::-webkit-details-marker { display: none; }
+		.routing-spoiler summary::after { content: '▼'; font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+		.routing-spoiler[open] summary::after { transform: rotate(180deg); color: var(--primary); }
+		.routing-spoiler-content { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+		.wg-status-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px; border-bottom: 1px solid var(--border-subtle); }
+		.wg-status-row:last-child { border-bottom: none; }
+		.wg-status-row span { color: var(--text-muted); }
+		.wg-status-row strong { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+		.hint-box {
+			padding: 14px;
+			background: rgba(59, 130, 246, 0.05);
+			border: 1px solid rgba(59, 130, 246, 0.15);
+			border-radius: var(--radius-md);
+			font-size: 12.5px;
+			color: var(--text-dim);
+			line-height: 1.55;
+		}
+		.hint-box strong { color: #60a5fa; }
+
+		.pending-link-row { background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+		.pending-link-row .pending-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+		.route-via-group { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-subtle); background: var(--bg-input); }
+		.route-via-btn { background: transparent; border: none; padding: 6px 12px; font-size: 11.5px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.15s; border-right: 1px solid var(--border-subtle); }
+		.route-via-btn:last-child { border-right: none; }
+		.route-via-btn:hover { color: var(--text-main); background: #1e293b; }
+		.route-via-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+
 		@media (max-width: 1024px) { .hardware-bar { grid-template-columns: repeat(2, 1fr); } }
 		@media (max-width: 768px) {
 			body { padding: 12px 10px 40px; }
+			.domain-row { flex-direction: column; align-items: stretch !important; gap: 8px !important; padding: 12px 10px !important; }
+			.domain-row-main { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
+			.domain-row-meta { display: flex; justify-content: space-between; align-items: center; width: 100%; padding-top: 4px; border-top: 1px dashed var(--border-subtle); }
+			.domain-name { word-break: break-all !important; white-space: normal !important; line-height: 1.4 !important; font-size: 13px !important; }
 			.header { padding: 14px; border-radius: var(--radius-lg); }
+			.brand-text h1 { font-size: 16px; }
+			.brand-text p { font-size: 11px; }
+			.header-actions { width: 100%; }
+			.header-actions .btn, .header-actions .lang-select { flex: 1; justify-content: center; padding: 9px 10px; font-size: 12px; }
 			.hardware-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+			.hw-pill { padding: 10px 12px; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+			.hw-pill .hw-label { font-size: 11px; }
+			.hw-pill strong { font-size: 12px; }
+			.status-banner { padding: 12px 14px; flex-direction: column; align-items: stretch; }
+			.banner-item { justify-content: space-between; }
+			.tabs-bar { padding: 4px; }
+			.tab-btn { padding: 8px 12px; font-size: 12.5px; }
+			.clients-grid { grid-template-columns: 1fr; }
+			.settings-grid, .routing-grid { grid-template-columns: 1fr; }
+			.form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+			.chart-wrapper, .settings-card { padding: 16px; border-radius: var(--radius-md); }
+			.chart-toolbar { flex-direction: column; align-items: stretch; gap: 12px; }
 			.chart-canvas-box { height: 280px; }
+			.chart-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+			#chartClientFilter, .btn-group { grid-column: 1 / -1; width: 100%; }
+			.btn-group { display: flex; }
+			.btn-group-btn { flex: 1; padding: 10px 4px; font-size: 12px; }
+			.chart-stats { grid-template-columns: 1fr; }
+			.stat-pill { padding: 10px 14px; font-size: 12px; }
+			.stat-pill strong { font-size: 13px; }
+			.toast { left: 14px; right: 14px; bottom: 14px; max-width: none; }
+			.pagination-bar { flex-direction: column; align-items: center; padding: 12px; }
+			.pagination-pages { width: 100%; justify-content: center; }
+			.modal-card { padding: 20px; border-radius: var(--radius-lg); }
+			.d-tab-btn { padding: 7px 10px; font-size: 12px; }
 		}
 	</style>
 </head>
@@ -763,7 +902,7 @@ MAIN_HTML = r"""
 		<div class="brand">
 			<div class="brand-text">
 				<h1>OpenVPN Dashboard</h1>
-				<p>Control Center & Analytics</p>
+				<p>Ultimate Control Center & Analytics</p>
 			</div>
 		</div>
 		<div class="header-actions">
@@ -810,19 +949,22 @@ MAIN_HTML = r"""
 	</div>
 
 	<div class="tabs-bar">
-		<div class="tab-btn active" onclick="switchTab('tab-clients')">👥 Клиенты</div>
+		<div class="tab-btn active" id="tabBtnClients" onclick="switchTab('tab-clients')">👥 Клиенты</div>
 		<div class="tab-btn" id="tabBtnSpeed" onclick="switchTab('tab-speed')">📈 Скорость</div>
-		<div class="tab-btn" onclick="switchTab('tab-limits')">⚡ Лимиты</div>
-		<div class="tab-btn" onclick="switchTab('tab-routing')">🔀 Маршрутизация</div>
-		<div class="tab-btn" onclick="switchTab('tab-config')">⚙️ Конфигурация</div>
-		<div class="tab-btn" onclick="switchTab('tab-settings')">🔐 Аккаунт</div>
+		<div class="tab-btn" id="tabBtnDomains" onclick="switchTab('tab-domains')">🌐 Сайты</div>
+		<div class="tab-btn" id="tabBtnInfographics" onclick="switchTab('tab-infographics')">📊 Инфографика</div>
+		<div class="tab-btn" id="tabBtnLimits" onclick="switchTab('tab-limits')">⚡ Лимиты</div>
+		<div class="tab-btn" id="tabBtnRouting" onclick="switchTab('tab-routing')">🔀 Маршрутизация</div>
+		<div class="tab-btn" id="tabBtnConfig" onclick="switchTab('tab-config')">⚙️ Конфигурация</div>
+		<div class="tab-btn" id="tabBtnSettings" onclick="switchTab('tab-settings')">🔐 Аккаунт</div>
 	</div>
 
+	<!-- VIEW: CLIENTS -->
 	<div id="tab-clients" class="tab-view active">
 		<div class="filter-bar">
 			<div class="search-wrapper">
 				<input type="text" class="search-input" id="clientSearch" placeholder="🔍 Поиск по имени или IP..." oninput="onFilterInputChange()" autocomplete="off">
-				<button type="button" class="search-clear-btn" id="clearSearchBtn" onclick="clearClientSearch()">✕</button>
+				<button type="button" class="search-clear-btn" id="clearSearchBtn" onclick="clearClientSearch()" title="Очистить">✕</button>
 			</div>
 			<select class="control-select" id="statusFilter" onchange="onFilterInputChange()">
 				<option value="all">Все активные</option>
@@ -833,6 +975,7 @@ MAIN_HTML = r"""
 			</select>
 			<select class="control-select" id="sortFilter" onchange="onFilterInputChange()">
 				<option value="online_first">🟢 Сначала онлайн</option>
+				<option value="traffic_desc">⬇️ По трафику</option>
 				<option value="name_asc">🔤 По имени</option>
 			</select>
 			<select class="control-select" id="pageSizeSelect" onchange="onPageSizeChange()">
@@ -841,28 +984,25 @@ MAIN_HTML = r"""
 				<option value="100">По 100</option>
 			</select>
 		</div>
-
 		<div class="clients-grid" id="clientsGrid">
-			<div style="grid-column: 1/-1; text-align:center; padding: 60px 20px; color:var(--text-muted);">⏳ Загрузка...</div>
+			<div style="grid-column: 1/-1; text-align:center; padding: 60px 20px; color:var(--text-muted); font-size:14px;">⏳ Загрузка...</div>
 		</div>
-
 		<div class="pagination-bar" id="paginationBar" style="display:none;">
 			<div class="pagination-info" id="paginationInfo"></div>
 			<div class="pagination-pages" id="paginationPages"></div>
 		</div>
 	</div>
 
+	<!-- VIEW: SPEED -->
 	<div id="tab-speed" class="tab-view">
 		<div class="chart-wrapper">
 			<div class="chart-toolbar">
 				<div>
 					<h3>Мониторинг скорости в реальном времени</h3>
-					<p style="font-size:12.5px; color:var(--text-muted);">Прямой опрос сокета OpenVPN в памяти</p>
+					<p>Прямой опрос сокета OpenVPN в памяти</p>
 				</div>
 				<div class="chart-controls">
-					<select class="control-select" id="chartClientFilter" onchange="renderChartData()">
-						<option value="__ALL__">👥 Все клиенты</option>
-					</select>
+					<select class="control-select" id="chartClientFilter" onchange="renderChartData()"><option value="__ALL__">👥 Все клиенты</option></select>
 					<div class="btn-group">
 						<button class="btn-group-btn active" id="btnWin30" onclick="setWindowTime(30)">30s</button>
 						<button class="btn-group-btn" id="btnWin60" onclick="setWindowTime(60)">1m</button>
@@ -874,10 +1014,7 @@ MAIN_HTML = r"""
 						<option value="up">↑ Upload</option>
 					</select>
 					<select class="control-select" id="chartPollInterval" onchange="changePollInterval()">
-						<option value="1000">1s</option>
-						<option value="3000">3s</option>
-						<option value="5000">5s</option>
-						<option value="10000">10s</option>
+						<option value="1000">1s</option><option value="3000">3s</option><option value="5000">5s</option><option value="10000">10s</option>
 					</select>
 				</div>
 			</div>
@@ -890,69 +1027,125 @@ MAIN_HTML = r"""
 		</div>
 	</div>
 
+	<!-- VIEW: GLOBAL DOMAINS -->
+	<div id="tab-domains" class="tab-view">
+		<div class="chart-wrapper">
+			<div class="chart-toolbar">
+				<div>
+					<h3>🌐 Журнал посещаемых сайтов</h3>
+					<p>История переходов по всем клиентам сервера в реальном времени</p>
+				</div>
+				<div style="display:flex; gap:8px; align-items:center; width:100%; max-width:680px; flex-wrap:wrap;">
+					<div class="search-wrapper" style="flex:1; min-width:180px;">
+						<input type="text" id="tabGlobalDomainSearch" class="search-input" placeholder="🔍 Поиск по домену или клиенту..." oninput="onTabGlobalDomainInput()" autocomplete="off">
+						<button type="button" class="search-clear-btn" id="clearTabGlobalDomainBtn" onclick="clearTabGlobalDomainSearch()" title="Очистить">✕</button>
+					</div>
+					<button class="btn btn-primary btn-sm" onclick="fetchTabGlobalDomains()">🔄 Обновить</button>
+					<button class="btn btn-sm" onclick="openIgnoredDomainsModal()" title="Управление исключениями">🚫 Исключения</button>
+					<button class="btn btn-warning btn-sm" onclick="runDbAction('clear_domains', 'Очистить всю историю сайтов?')">🗑️ Очистить</button>
+				</div>
+			</div>
+			<div class="domains-list-box" id="tabGlobalDomainsListBox" style="max-height:640px; overflow-y:auto; margin-top:10px;">
+				<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px;">⏳ Загрузка...</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- VIEW: INFOGRAPHICS -->
+	<div id="tab-infographics" class="tab-view">
+		<div class="chart-stats" style="margin-bottom:20px;">
+			<div class="stat-pill"><span>∑ Весь трафик сервера</span> <strong id="infoTotalAll" style="color:#f59e0b;">0 B</strong></div>
+			<div class="stat-pill"><span>📥 Суммарный Download</span> <strong id="infoTotalSent" style="color:#60a5fa;">0 B</strong></div>
+			<div class="stat-pill"><span>📤 Суммарный Upload</span> <strong id="infoTotalRecv" style="color:#34d399;">0 B</strong></div>
+		</div>
+		<div class="settings-grid">
+			<div class="chart-wrapper"><h3>📊 Топ-10 клиентов по трафику</h3><div style="height:300px; position:relative;"><canvas id="infoTopClientsChart"></canvas></div></div>
+			<div class="chart-wrapper"><h3>👥 Распределение статусов</h3><div style="height:300px; position:relative;"><canvas id="infoStatusPieChart"></canvas></div></div>
+			<div class="chart-wrapper"><h3>🌐 Топ-10 посещаемых доменов</h3><div style="height:300px; position:relative;"><canvas id="infoTopDomainsChart"></canvas></div></div>
+		</div>
+	</div>
+
+	<!-- VIEW: SPEED LIMITS -->
 	<div id="tab-limits" class="tab-view">
 		<div class="settings-grid">
 			<div class="settings-card">
 				<h3>⚡ Двусторонний лимит скорости (tc + ifb0)</h3>
-				<p style="font-size:12.5px; color:var(--text-muted);">Ограничение скорости в обе стороны (приём и отдача). 0 = без ограничения.</p>
-
+				<p class="card-desc">Ограничивает скорость в обе стороны (Download + Upload) для активных сессий. 0 = без ограничения.</p>
 				<div class="form-group">
 					<label class="form-label">Режим ограничения</label>
-					<select class="control-select" id="speedLimitMode" style="width:100%;" onchange="renderSpeedLimitsEditor()">
+					<select class="control-select" id="speedLimitMode" onchange="renderSpeedLimitsEditor()">
 						<option value="none">⚪ Без ограничения</option>
 						<option value="global">🌐 Для всех клиентов (общий лимит)</option>
 						<option value="selected">☑️ Для выбранных клиентов (общий лимит)</option>
 						<option value="per_client">🎯 Индивидуально для каждого клиента</option>
 					</select>
 				</div>
-
-				<div class="form-group">
-					<label class="form-label">Общий лимит скорости (Кбит/с, напр. 5120 = 5 Мбит/с)</label>
-					<input type="number" min="0" step="64" class="search-input" id="globalSpeedLimitKbps" value="0" style="width:100%;">
+				<div class="form-group" id="globalLimitGroup">
+					<label class="form-label">Общий лимит скорости (Кбит/с)</label>
+					<input type="number" min="0" step="64" class="search-input" id="globalSpeedLimitKbps" value="0" placeholder="Например: 5120">
+					<div class="speed-presets">
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(1024)">1 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(5120)">5 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(10240)">10 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(25600)">25 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(51200)">50 Мбит/с</button>
+						<button type="button" class="preset-btn" onclick="setGlobalSpeedPreset(0)">∞ Без лимита</button>
+					</div>
 				</div>
-
-				<button class="btn btn-primary" style="width:100%; padding:12px; justify-content:center;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
+				<button class="btn btn-primary" style="padding:13px; justify-content:center; margin-top:4px;" onclick="saveSpeedLimits()">💾 Применить лимиты скорости</button>
 			</div>
 
-			<div class="settings-card">
+			<div class="settings-card" id="speedLimitsClientsCard">
 				<h3>👥 Список клиентов для лимитов</h3>
+				<p class="card-desc" id="speedLimitsClientsHint">Выберите режим «Для выбранных» или «Индивидуально» для настройки по клиентам.</p>
 				<div class="domains-list-box" id="speedLimitsClientsBox" style="max-height:420px; overflow-y:auto;"></div>
 			</div>
 		</div>
 	</div>
 
+	<!-- VIEW: ROUTING -->
 	<div id="tab-routing" class="tab-view">
 		<div class="routing-grid">
 			<div class="routing-grid-left">
 				<div class="settings-card">
 					<h3>Сплит-туннель (WireGuard + ipset)</h3>
 					<p class="card-desc">Маршрутизация через второй VPN-сервер</p>
-
 					<div class="wg-status-row"><span>Статус WG0:</span><strong id="wgText">...</strong></div>
 					<div class="wg-status-row"><span>Подсетей в ipset:</span><strong id="ipsetSubnetsCount" style="color:#60a5fa;">...</strong></div>
 
-					<div class="form-group" style="margin-top:6px;">
-						<input type="text" id="remoteServerIp" class="search-input" placeholder="IP удаленного сервера" style="width:100%; margin-bottom:8px;">
-						<input type="password" id="remoteServerPass" class="search-input" placeholder="Пароль root" style="width:100%; margin-bottom:8px;">
-						<button class="btn btn-success" style="width:100%; justify-content:center;" onclick="setupRemoteTunnel()">🚀 Настроить туннель</button>
+					<div style="background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin: 6px 0;">
+						<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+							<strong style="font-size:13px;">🔗 Удалённая точка выхода</strong>
+							<span id="remoteEndpointStatus" style="font-size:12px; padding:3px 10px; border-radius:12px; font-weight:600;">...</span>
+						</div>
+						<div id="remoteEndpointConnected" style="display:none; font-size:13px;">
+							<span>Подключено к:</span>
+							<strong id="remoteEndpointIp" style="font-family:'JetBrains Mono',monospace; color:#34d399;">—</strong>
+							<button class="btn btn-sm" style="margin-left:10px;" onclick="showRemoteReconfigure()">Перенастроить</button>
+						</div>
+						<div id="remoteEndpointForm">
+							<div class="form-group" style="margin-bottom:8px;"><input type="text" id="remoteServerIp" class="search-input" placeholder="IP удаленного сервера"></div>
+							<div class="form-group" style="margin-bottom:8px;"><input type="text" id="remoteServerPass" class="search-input" placeholder="Пароль root"></div>
+							<div style="display:flex; gap:10px;">
+								<button class="btn btn-danger" style="justify-content:center; width:50%;" onclick="hideRemoteReconfigure()">❌ Отмена</button>
+								<button class="btn btn-success" style="justify-content:center; width:50%;" onclick="setupRemoteTunnel()">🚀 Настроить туннель</button>
+							</div>
+						</div>
 					</div>
 
 					<div class="switch-row">
-						<div class="switch-info"><strong>🚫 Блокировка BitTorrent</strong><span>Защита от абузов и банов хостинга</span></div>
+						<div class="switch-info">
+							<strong>🚫 Блокировка BitTorrent</strong>
+							<span>Защита от абузов и банов хостинга</span>
+						</div>
 						<label class="toggle-switch"><input type="checkbox" id="torrentBlockCheck"><span class="toggle-slider"></span></label>
 					</div>
 
-					<div class="form-group">
-						<label class="form-label">URL списка подсетей:</label>
-						<input type="text" id="cidrUrlInput" class="search-input" style="width:100%;">
-					</div>
-					<div class="form-group">
-						<label class="form-label">Свои IP/подсети:</label>
-						<textarea id="customCidrsInput" class="textarea-input" rows="3" placeholder="77.88.8.8/32&#10;192.168.10.0/24" style="width:100%;"></textarea>
-					</div>
+					<div class="form-group"><label class="form-label">URL списка подсетей:</label><input type="text" id="cidrUrlInput" class="search-input"></div>
+					<div class="form-group"><label class="form-label">Свои IP/подсети:</label><textarea id="customCidrsInput" class="textarea-input" rows="3" placeholder="77.88.8.8/32&#10;192.168.10.0/24"></textarea></div>
 					<div class="form-group">
 						<label class="form-label">Режим:</label>
-						<select class="control-select" id="routingModeSelect" style="width:100%;">
+						<select class="control-select" id="routingModeSelect">
 							<option value="off">🔴 Отключено</option>
 							<option value="split">🟡 CIDR напрямую, остальное в WG</option>
 							<option value="cidr_wg">🟣 CIDR в WG, остальное напрямую</option>
@@ -960,7 +1153,20 @@ MAIN_HTML = r"""
 						</select>
 					</div>
 
-					<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+					<details class="routing-spoiler">
+						<summary><span>🔗 Управление ссылками сплит-туннеля</span></summary>
+						<div class="routing-spoiler-content">
+							<p style="font-size:12px; color:var(--text-muted); line-height:1.4;">Разрешите URL в IP для выборочной маршрутизации через WireGuard или напрямую.</p>
+							<div style="display:flex; gap:8px; flex-wrap:wrap;">
+								<input type="text" id="splitLinkUrl" class="search-input" placeholder="https://example.com" style="flex:1; min-width:180px;">
+								<button class="btn btn-primary btn-sm" onclick="resolveLink()">🔍 Найти IP</button>
+							</div>
+							<div id="pendingLinksBox"></div>
+							<div class="domains-list-box" id="splitLinksList" style="max-height:220px; overflow-y:auto;"></div>
+						</div>
+					</details>
+
+					<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
 						<button class="btn btn-primary" onclick="saveRoutingSettings()">💾 Сохранить</button>
 						<button class="btn" onclick="updateCidrIps()">🔄 Обновить CIDR</button>
 					</div>
@@ -970,43 +1176,38 @@ MAIN_HTML = r"""
 			<div class="settings-card">
 				<h3>🛡️ Блокировка рекламы (DNS AdBlock / dnsmasq)</h3>
 				<p class="card-desc">Автоматическая фильтрация рекламы и трекеров на уровне VPN-сервера без потери скорости</p>
-
 				<div class="switch-row">
-					<div class="switch-info"><strong>Включить блокировку рекламы для всех клиентов</strong><span id="adblockStatusLabel">...</span></div>
+					<div class="switch-info">
+						<strong>Включить блокировку рекламы для всех клиентов</strong>
+						<span id="adblockStatusLabel">...</span>
+					</div>
 					<label class="toggle-switch"><input type="checkbox" id="adblockEnableToggle" onchange="toggleAdblock(this.checked)"><span class="toggle-slider"></span></label>
 				</div>
-
-				<div class="form-row-2">
-					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px;">
+				<div class="form-row-2" style="margin-top:4px;">
+					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; min-width:0;">
 						<label class="form-label">📋 Добавить AdList по ссылке</label>
-						<div style="display:flex; gap:8px; margin-bottom:10px;">
-							<input type="text" id="adblockListUrl" class="search-input" placeholder="https://..." style="flex:1;">
-							<select class="control-select" id="adblockListType">
-								<option value="black">⚫ Черный список</option>
-								<option value="white">⚪ Белый список</option>
-							</select>
-							<button class="btn btn-primary" onclick="addAdblockList()">➕</button>
+						<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+							<input type="text" id="adblockListUrl" class="search-input" placeholder="https://..." style="flex:1; min-width:140px;">
+							<select class="control-select" id="adblockListType"><option value="black">⚫ Черный список</option><option value="white">⚪ Белый список</option></select>
+							<button class="btn btn-primary" onclick="addAdblockList()">➕ Добавить</button>
 						</div>
-						<div class="domains-list-box" id="adblockListsBox" style="max-height:340px; overflow-y:auto;"></div>
+						<div class="domains-list-box" id="adblockListsBox" style="max-height:360px; overflow-y:auto;"></div>
 					</div>
-
-					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px;">
+					<div style="background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; min-width:0;">
 						<label class="form-label">🌐 Добавить отдельный домен</label>
-						<div style="display:flex; gap:8px; margin-bottom:10px;">
-							<input type="text" id="adblockDomainInput" class="search-input" placeholder="ads.example.com" style="flex:1;">
-							<select class="control-select" id="adblockDomainType">
-								<option value="black">⚫ В черный</option>
-								<option value="white">⚪ В белый</option>
-							</select>
-							<button class="btn btn-primary" onclick="addAdblockDomain()">➕</button>
+						<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+							<input type="text" id="adblockDomainInput" class="search-input" placeholder="ads.example.com" style="flex:1; min-width:140px;">
+							<select class="control-select" id="adblockDomainType"><option value="black">⚫ В черный</option><option value="white">⚪ В белый</option></select>
+							<button class="btn btn-primary" onclick="addAdblockDomain()">➕ Добавить</button>
 						</div>
-						<div class="domains-list-box" id="adblockDomainsBox" style="max-height:340px; overflow-y:auto;"></div>
+						<div class="domains-list-box" id="adblockDomainsBox" style="max-height:360px; overflow-y:auto;"></div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
+	<!-- VIEW: CONFIG -->
 	<div id="tab-config" class="tab-view">
 		<div class="chart-wrapper">
 			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
@@ -1023,36 +1224,71 @@ MAIN_HTML = r"""
 		</div>
 	</div>
 
+	<!-- VIEW: SETTINGS -->
 	<div id="tab-settings" class="tab-view">
 		<div class="settings-grid">
 			<div class="settings-card">
 				<h3>🔐 Учетная запись и Панель</h3>
-				<p class="card-desc">Безопасность входа и параметры панели</p>
-
+				<p class="card-desc">Безопасность входа и сетевые параметры панели</p>
 				<div class="form-row-2">
 					<div class="form-group"><label class="form-label">Логин администратора</label><input type="text" id="setAdminLogin" class="search-input"></div>
-					<div class="form-group"><label class="form-label">Новый пароль</label><input type="password" id="setAdminPass" class="search-input" placeholder="••••••••"></div>
+					<div class="form-group"><label class="form-label">Новый пароль</label><input type="text" id="setAdminPass" class="search-input" placeholder="••••••••"></div>
 				</div>
-
 				<div class="form-row-2">
+					<div class="form-group"><label class="form-label">Время сессии (сек)</label><input type="number" id="setSessionAge" class="search-input"></div>
 					<div class="form-group"><label class="form-label">Порт панели</label><input type="number" id="setPanelPort" class="search-input"></div>
-					<div class="form-group"><label class="form-label">Домен / IP сервера</label><input type="text" id="setOvpnDomain" class="search-input"></div>
+				</div>
+				<div class="form-row-2">
+					<div class="form-group"><label class="form-label">Mgmt Host</label><input type="text" id="setMgmtHost" class="search-input" placeholder="127.0.0.1"></div>
+					<div class="form-group"><label class="form-label">Mgmt Port</label><input type="number" id="setMgmtPort" class="search-input" placeholder="7505"></div>
+				</div>
+				<div class="form-row-2">
+					<div class="form-group"><label class="form-label">TUN iface</label><input type="text" id="setTunIface" class="search-input" placeholder="tun0"></div>
+					<div class="form-group"><label class="form-label">Хранение доменов (сек)</label><input type="number" id="setDomainRetention" class="search-input"></div>
 				</div>
 			</div>
 
 			<div class="settings-card">
 				<h3>🎛️ Модули и функции</h3>
-				<p class="card-desc">Включение и отключение элементов интерфейса</p>
-
-				<div class="switch-row"><div class="switch-info"><strong>📈 Мониторинг скорости</strong><span>Живые графики скорости</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableSpeed"><span class="toggle-slider"></span></label></div>
-				<div class="switch-row"><div class="switch-info"><strong>💻 Панель ресурсов</strong><span>CPU / RAM / Disk / Ping</span></div><label class="toggle-switch"><input type="checkbox" id="setEnableHwBar"><span class="toggle-slider"></span></label></div>
-				<div class="switch-row"><div class="switch-info"><strong>🚫 Блок BitTorrent</strong><span>iptables string match</span></div><label class="toggle-switch"><input type="checkbox" id="setTorrentBlock"><span class="toggle-slider"></span></label></div>
+				<p class="card-desc">Включение и отключение в реальном времени</p>
+				<div class="switch-row">
+					<div class="switch-info"><strong>🕵️ Сниффер трафика</strong><span>SNI / DNS / HTTP домены</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableSniffer"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>📈 Мониторинг скорости</strong><span>Живые графики скорости</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableSpeed"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>📊 Статистика трафика</strong><span>SQLite учет и лимиты</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableStats"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>🌐 История IP подключений</strong><span>Сохранять реальные IP пользователей</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableIpHistory"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>🎨 Инфографика</strong><span>Диаграммы и аналитика</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableInfographics"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>💻 Панель ресурсов</strong><span>CPU / RAM / Disk / Ping</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setEnableHwBar"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>⚡ Блок QUIC (UDP/443)</strong><span>Точный SNI сниффинг</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setQuicBlock"><span class="toggle-slider"></span></label>
+				</div>
+				<div class="switch-row">
+					<div class="switch-info"><strong>🚫 Блок BitTorrent</strong><span>iptables string match</span></div>
+					<label class="toggle-switch"><input type="checkbox" id="setTorrentBlock"><span class="toggle-slider"></span></label>
+				</div>
 			</div>
 
 			<div class="settings-card">
-				<h3>🛠️ Управление службами</h3>
-				<p class="card-desc">Применение параметров и управление демоном</p>
 
+				<h3>🛠️ Управление службами и БД</h3>
+				<p class="card-desc">Применение параметров и очистка данных</p>
 				<div style="display:flex; flex-direction:column; gap:10px;">
 					<button class="btn btn-primary" style="padding:13px; justify-content:center;" onclick="saveAllAccountSettings(false)">💾 Сохранить настройки</button>
 					<button class="btn btn-success" style="padding:13px; justify-content:center;" onclick="saveAllAccountSettings(true)">🚀 Сохранить и перезапустить</button>
@@ -1064,11 +1300,27 @@ MAIN_HTML = r"""
 					<button class="btn btn-success" style="justify-content:center;" onclick="controlOvpnService('start')">▶️ Старт</button>
 					<button class="btn btn-danger" style="justify-content:center;" onclick="controlOvpnService('stop')">⏹️ Стоп</button>
 				</div>
+
+				<h4 style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">SQLite</h4>
+				<div class="form-row-2">
+					<button class="btn btn-warning" style="justify-content:center;" onclick="runDbAction('clear_domains', 'Очистить всю историю сайтов?')">🗑️ Сайты</button>
+					<button class="btn btn-danger" style="justify-content:center;" onclick="runDbAction('clear_traffic', 'Сбросить трафик всех клиентов?')">↺ Трафик</button>
+				</div>
+				<div class="form-row-2">
+					<button class="btn btn-warning" style="justify-content:center;" onclick="runDbAction('clear_ip_history', 'Очистить всю историю IP-адресов?')">🌐 Очистить IP</button>
+					<button class="btn" style="justify-content:center;" onclick="runDbAction('vacuum', null)">🧹 VACUUM</button>
+				</div>
+
+				<div class="hint-box">
+					<strong>💡 Подсказка:</strong>
+					<span> После смены порта или протокола не забудьте сохранить server.conf и перевыпустить .ovpn профили.</span>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
 
+<!-- MODALS -->
 <div class="modal-overlay" id="createModal">
 	<div class="modal-card">
 		<h2>➕ Новый клиент</h2>
@@ -1076,10 +1328,10 @@ MAIN_HTML = r"""
 		<label class="form-label">Имя клиента</label>
 		<input type="text" id="newClientName" class="search-input" placeholder="iphone-user" style="width:100%; margin-bottom:12px;" autofocus>
 		<label class="form-label">Заметка</label>
-		<input type="text" id="newClientNote" class="search-input" placeholder="Например: Ноутбук" style="width:100%; margin-bottom:12px;">
-		<div style="margin-bottom: 20px;">
-			<label class="form-label">Срок в днях (0 = ∞)</label>
-			<input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%;">
+		<input type="text" id="newClientNote" class="search-input" placeholder="Например: Ноутбук шефа" style="width:100%; margin-bottom:12px;">
+		<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+			<div><label class="form-label">Лимит ГБ (0 = ∞)</label><input type="number" id="newClientLimit" class="search-input" value="0" min="0" style="width:100%;"></div>
+			<div><label class="form-label">Срок в днях (0 = ∞)</label><input type="number" id="newClientTtl" class="search-input" value="0" min="0" style="width:100%;"></div>
 		</div>
 		<div style="display:flex; gap:10px; justify-content:flex-end;">
 			<button class="btn" onclick="closeModals()">Отмена</button>
@@ -1092,9 +1344,7 @@ MAIN_HTML = r"""
 	<div class="modal-card" style="text-align:center;">
 		<h2 id="qrModalTitle">📱 QR</h2>
 		<p>Отсканируйте камерой телефона для скачивания .ovpn профиля</p>
-		<div style="background:#fff; padding:16px; border-radius:16px; display:inline-block; margin: 0 auto 16px;">
-			<canvas id="qrCanvas"></canvas>
-		</div>
+		<div style="background:#fff; padding:16px; border-radius:16px; display:inline-block; margin: 0 auto 16px;"><canvas id="qrCanvas"></canvas></div>
 		<div style="display:flex; gap:10px;">
 			<button class="btn btn-primary" style="flex:1; justify-content:center;" id="qrCopyBtn">🔗 Копировать</button>
 			<button class="btn" style="flex:1; justify-content:center;" onclick="closeModals()">Закрыть</button>
@@ -1102,10 +1352,52 @@ MAIN_HTML = r"""
 	</div>
 </div>
 
+<div class="modal-overlay" id="domainsModal">
+	<div class="modal-card modal-lg">
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+			<h2 id="domainsModalTitle">🌐 Сайты</h2>
+			<span id="domainsCountBadge" style="font-size:12px; color:var(--primary); font-weight:600;">0</span>
+		</div>
+		<p>История посещенных доменов и подключений</p>
+		<div class="domains-tabs">
+			<button class="d-tab-btn active" id="d-tab-history" onclick="switchDomainTab('history')">📋 История</button>
+			<button class="d-tab-btn" id="d-tab-top" onclick="switchDomainTab('top')">📊 Топ-10</button>
+			<button class="d-tab-btn" id="d-tab-ips" onclick="switchDomainTab('ips')">🌐 IP-адреса</button>
+		</div>
+		<div id="d-view-history" class="d-tab-view active">
+			<div style="display:flex; gap:8px; margin-bottom:10px;">
+				<div class="search-wrapper" style="flex:1;"><input type="text" id="domainSearchInput" class="search-input" placeholder="🔍 Фильтр..." oninput="fetchClientDomains()" style="padding:8px 12px; font-size:13px;"></div>
+				<button class="btn btn-sm" onclick="fetchClientDomains()">🔄</button>
+				<button class="btn btn-sm btn-danger" onclick="clearClientDomains()">🗑️</button>
+			</div>
+			<div class="domains-list-box" id="domainsListBox"></div>
+		</div>
+		<div id="d-view-top" class="d-tab-view"><div class="domains-list-box" id="domainsTopBox"></div></div>
+		<div id="d-view-ips" class="d-tab-view"><div class="domains-list-box" id="ipsListBox"></div></div>
+		<div style="margin-top:16px;"><button class="btn" style="width:100%; justify-content:center;" onclick="closeModals()">Закрыть</button></div>
+	</div>
+</div>
+
+<div class="modal-overlay" id="ignoredDomainsModal">
+	<div class="modal-card modal-lg">
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+			<h2>🚫 Исключения из сниффинга</h2>
+			<span id="ignoredDomainsCountBadge" style="font-size:12px; color:var(--danger); font-weight:600;">0</span>
+		</div>
+		<p>Домены и все их поддомены (*.domain.com) будут игнорироваться сниффером и не сохраняться в БД.</p>
+		<div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+			<input type="text" id="newIgnoredDomainInput" class="search-input" placeholder="Например: yandex.ru или google.com" style="flex:1; min-width:180px;">
+			<button class="btn btn-danger" onclick="addManualIgnoredDomain()">➕ Скрыть домен</button>
+		</div>
+		<div class="domains-list-box" id="ignoredDomainsListBox" style="max-height:380px; overflow-y:auto;"></div>
+		<div style="margin-top:16px;"><button class="btn" style="width:100%; justify-content:center;" onclick="closeModals()">Закрыть</button></div>
+	</div>
+</div>
+
 <div class="modal-overlay" id="backupModal">
 	<div class="modal-card">
 		<h2>📦 Резервное копирование</h2>
-		<p>Полный архив конфигурации.</p>
+		<p>Полный архив ключей, сертификатов и конфигурации.</p>
 		<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
 			<button class="btn" onclick="downloadBackupArchive()" style="padding:14px; justify-content:center;">📥 Скачать архив</button>
 			<button class="btn btn-primary" onclick="document.getElementById('backupFileInput').click()" style="padding:14px; justify-content:center;">📤 Восстановить из файла</button>
@@ -1120,19 +1412,28 @@ MAIN_HTML = r"""
 <script>
 let currentTheme = localStorage.getItem("ovpn_theme") || "dark";
 let currentLang = localStorage.getItem("ovpn_lang") || "ru";
-let panelConfig = { enable_speed_monitor: "1", enable_hardware_bar: "1", speed_limit_mode: "none", global_speed_limit_kbps: "0", selected_limit_clients: "[]" };
+let panelConfig = {
+	enable_sniffer: "1", enable_speed_monitor: "1", enable_traffic_stats: "1",
+	enable_ip_history: "1", enable_infographics: "1", enable_hardware_bar: "1",
+	speed_limit_mode: "none", global_speed_limit_kbps: "0", selected_limit_clients: "[]"
+};
 let allClientsList = [];
 let currentPage = 1;
 let pageSize = parseInt(localStorage.getItem('ovpn_page_size')) || 20;
-let speedChart = null;
-let selectedWindowSeconds = 30;
-let speedPollTimer = null;
-let speedDataPoints = [];
-let latestLiveSpeeds = {};
-let chartFilterDirty = false;
-let clientColorRegistry = {};
-let paletteIdx = 0;
+let speedChart = null, infoClientsChart = null, infoStatusChart = null, infoDomainsChart = null;
+let selectedWindowSeconds = 30, speedPollTimer = null, speedDataPoints = [], latestLiveSpeeds = {};
+let chartFilterDirty = false, clientColorRegistry = {}, paletteIdx = 0, pendingLinks = [], currentDomainsClient = null;
 const colorPalette = ['#3b82f6','#10b981','#f43f5e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#84cc16','#6366f1','#14b8a6'];
+
+function escapeHtml(str) {
+	if (!str) return '';
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+}
 
 function applyTheme(theme) {
 	currentTheme = theme;
@@ -1144,10 +1445,7 @@ function applyTheme(theme) {
 function toggleTheme() { applyTheme(currentTheme === "light" ? "dark" : "light"); }
 applyTheme(currentTheme);
 
-function changeLanguage(lang) {
-	currentLang = lang;
-	localStorage.setItem("ovpn_lang", lang);
-}
+function changeLanguage(lang) { currentLang = lang; localStorage.setItem("ovpn_lang", lang); }
 
 function showToast(msg, type = 'success') {
 	const box = document.getElementById('toastBox');
@@ -1160,20 +1458,17 @@ function showToast(msg, type = 'success') {
 function copyToClipboard(text) {
 	if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
 	const ta = document.createElement("textarea");
-	ta.value = text;
-	ta.style.position = "fixed";
-	ta.style.left = "-999999px";
-	document.body.appendChild(ta);
-	ta.focus(); ta.select();
+	ta.value = text; ta.style.position = "fixed"; ta.style.left = "-999999px";
+	document.body.appendChild(ta); ta.focus(); ta.select();
 	return new Promise((res, rej) => { document.execCommand('copy') ? res() : rej(); ta.remove(); });
 }
 
-function formatTs(ts) {
-	if (!ts || Number(ts) <= 0) return "—";
-	const d = new Date(Number(ts) * 1000);
-	return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+function formatBytes(bytes) {
+	if (!bytes || bytes <= 0) return '0 B';
+	const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+	const i = Math.floor(Math.log(bytes) / Math.log(1024));
+	return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
 }
-
 function formatSpeed(bps) {
 	if (!bps || bps <= 0) return '0 B/s';
 	const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
@@ -1181,13 +1476,16 @@ function formatSpeed(bps) {
 	while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
 	return v.toFixed(1) + ' ' + units[i];
 }
+function formatTs(ts) {
+	if (!ts || Number(ts) <= 0) return "—";
+	return new Date(Number(ts) * 1000).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 let taskPollTimer = null;
 function watchBackgroundTask(taskId, onDone) {
 	const banner = document.getElementById('taskProgressBanner');
 	banner.classList.add('active');
 	if (taskPollTimer) clearInterval(taskPollTimer);
-
 	const tick = async () => {
 		try {
 			const r = await fetch(`/api/tasks/status?task_id=${encodeURIComponent(taskId)}`);
@@ -1198,10 +1496,8 @@ function watchBackgroundTask(taskId, onDone) {
 			document.getElementById('taskProgressMsg').textContent = tsk.message || '';
 			document.getElementById('taskProgressPct').textContent = `${tsk.progress || 0}%`;
 			document.getElementById('taskProgressFill').style.width = `${tsk.progress || 0}%`;
-
 			if (tsk.status === 'done' || tsk.status === 'error') {
-				clearInterval(taskPollTimer);
-				taskPollTimer = null;
+				clearInterval(taskPollTimer); taskPollTimer = null;
 				setTimeout(() => banner.classList.remove('active'), 2500);
 				if (onDone) onDone(tsk.status === 'done', tsk.message);
 			}
@@ -1209,6 +1505,14 @@ function watchBackgroundTask(taskId, onDone) {
 	};
 	tick();
 	taskPollTimer = setInterval(tick, 700);
+}
+
+function applyDynamicFeatureVisibility() {
+	document.getElementById('hardwareBar').style.display = panelConfig.enable_hardware_bar === "1" ? 'grid' : 'none';
+	document.getElementById('tabBtnDomains').style.display = panelConfig.enable_sniffer === "1" ? 'block' : 'none';
+	document.getElementById('tabBtnSpeed').style.display = panelConfig.enable_speed_monitor === "1" ? 'block' : 'none';
+	document.getElementById('tabBtnInfographics').style.display = panelConfig.enable_infographics === "1" ? 'block' : 'none';
+	applyClientFilter();
 }
 
 function switchTab(tabId) {
@@ -1221,49 +1525,31 @@ function switchTab(tabId) {
 	if (tabId === 'tab-config') loadConfigView();
 	if (tabId === 'tab-routing') loadRoutingView();
 	if (tabId === 'tab-settings') loadSettingsView();
+	if (tabId === 'tab-infographics') loadInfographicsView();
+	if (tabId === 'tab-domains') fetchTabGlobalDomains();
 	if (tabId === 'tab-limits') renderSpeedLimitsEditor();
-	if (tabId === 'tab-speed') {
-		if (speedChart) speedChart.resize();
-		fetchHistoryAndSync();
-	}
+	if (tabId === 'tab-speed') { if (speedChart) speedChart.resize(); fetchHistoryAndSync(); }
 }
 
 function openCreateModal() {
 	document.getElementById('createModal').classList.add('active');
 	document.getElementById('newClientName').value = '';
 	document.getElementById('newClientNote').value = '';
+	document.getElementById('newClientLimit').value = '0';
 	document.getElementById('newClientTtl').value = '0';
-	setTimeout(() => document.getElementById('newClientName').focus(), 100);
 }
 function openBackupModal() { document.getElementById('backupModal').classList.add('active'); }
-function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
-
-document.querySelectorAll('.modal-overlay').forEach(m => {
-	m.addEventListener('click', e => { if (e.target === m) closeModals(); });
-});
-document.addEventListener('keydown', e => {
-	if (e.key === 'Escape') closeModals();
-	if (e.key === 'Enter' && document.getElementById('createModal').classList.contains('active')) submitCreateClient();
-});
+function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); currentDomainsClient = null; }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
 
 function onFilterInputChange() {
 	const input = document.getElementById('clientSearch');
 	const clearBtn = document.getElementById('clearSearchBtn');
 	if (clearBtn && input) clearBtn.style.display = input.value.length > 0 ? 'inline-flex' : 'none';
-	currentPage = 1;
-	applyClientFilter();
+	currentPage = 1; applyClientFilter();
 }
-function clearClientSearch() {
-	const input = document.getElementById('clientSearch');
-	if (input) { input.value = ''; input.focus(); }
-	onFilterInputChange();
-}
-function onPageSizeChange() {
-	pageSize = parseInt(document.getElementById('pageSizeSelect').value) || 20;
-	localStorage.setItem('ovpn_page_size', pageSize);
-	currentPage = 1;
-	applyClientFilter();
-}
+function clearClientSearch() { const i = document.getElementById('clientSearch'); if (i) { i.value = ''; i.focus(); } onFilterInputChange(); }
+function onPageSizeChange() { pageSize = parseInt(document.getElementById('pageSizeSelect').value) || 20; localStorage.setItem('ovpn_page_size', pageSize); currentPage = 1; applyClientFilter(); }
 function goToPage(p) { currentPage = p; applyClientFilter(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 async function loadClients() {
@@ -1287,8 +1573,10 @@ async function loadClients() {
 		document.getElementById('activeClientsCount').textContent = `${online} / ${validTotal}`;
 		document.getElementById('lastSyncTime').textContent = `Обновлено: ${new Date().toLocaleTimeString()}`;
 
+		if (!chartFilterDirty) syncChartUserDropdown();
+		const isDomainsTabActive = document.getElementById('tab-domains')?.classList.contains('active');
 		const isModalActive = document.querySelector('.modal-overlay.active') !== null;
-		if (!isModalActive) applyClientFilter();
+		if (!isDomainsTabActive && !isModalActive) applyClientFilter();
 		if (document.getElementById('tab-limits')?.classList.contains('active')) renderSpeedLimitsEditor();
 	} catch (e) {}
 }
@@ -1314,6 +1602,7 @@ function applyClientFilter() {
 
 	filtered.sort((a, b) => {
 		if (sortMode === 'online_first' && a.is_online !== b.is_online) return a.is_online ? -1 : 1;
+		if (sortMode === 'traffic_desc') return ((b.traffic_recv || 0) + (b.traffic_sent || 0)) - ((a.traffic_recv || 0) + (a.traffic_sent || 0));
 		return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 	});
 
@@ -1334,7 +1623,11 @@ function renderPagination(totalItems, startIdx, countOnPage, totalPages) {
 	document.getElementById('paginationInfo').textContent = `Показано ${startIdx + 1}–${startIdx + countOnPage} из ${totalItems}`;
 	let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>«</button>`;
 	for (let p = 1; p <= totalPages; p++) {
-		html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+		if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2) {
+			html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+		} else if (Math.abs(p - currentPage) === 3) {
+			html += `<span style="padding:8px 4px; color:var(--text-muted);">…</span>`;
+		}
 	}
 	html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>»</button>`;
 	document.getElementById('paginationPages').innerHTML = html;
@@ -1343,70 +1636,58 @@ function renderPagination(totalItems, startIdx, countOnPage, totalPages) {
 function renderClientsGrid(clients) {
 	const grid = document.getElementById('clientsGrid');
 	if (!clients || clients.length === 0) {
-		grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px 20px; color:var(--text-muted); font-size:14px;">Список клиентов пуст</div>`;
+		grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);">Список клиентов пуст</div>`;
 		return;
 	}
-
+	const snifferOn = panelConfig.enable_sniffer === "1";
 	const speedOn = panelConfig.enable_speed_monitor === "1";
+	const statsOn = panelConfig.enable_traffic_stats === "1";
 
 	grid.innerHTML = clients.map(c => {
 		const isOnline = c.is_online;
 		const isPaused = c.is_paused;
-
 		const onlineHtml = isPaused
 			? `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`
-			: (isOnline
-				? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>`
-				: `<span style="color:var(--text-muted);">⚪ Офлайн</span>`);
-
+			: (isOnline ? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>` : `<span style="color:var(--text-muted);">⚪ Офлайн</span>`);
 		const statusLabel = c.status === 'revoked' ? 'ОТОЗВАН' : (isPaused ? 'НА ПАУЗЕ' : 'АКТИВЕН');
 		const badgeCls = c.status === 'revoked' ? 'revoked' : (isPaused ? 'paused' : 'valid');
 
+		const totalBytes = formatBytes((c.traffic_recv || 0) + (c.traffic_sent || 0));
+		const downBytes = formatBytes(c.traffic_sent || 0);
+		const upBytes = formatBytes(c.traffic_recv || 0);
+		const safeName = escapeHtml(c.name);
+		const safeNote = escapeHtml(c.note || '');
 		const downColor = isOnline ? '#60a5fa' : 'var(--text-muted)';
 		const upColor = isOnline ? '#34d399' : 'var(--text-muted)';
-		const noteHtml = c.note ? `<div class="client-note" title="${c.note}">💬 ${c.note}</div>` : '';
+		const noteHtml = safeNote ? `<div class="client-note" title="${safeNote}">💬 ${safeNote}</div>` : '';
 
-		const speedRowHtml = speedOn ? `
-			<div class="live-speed-row">
-				<span id="card-down-${c.name}" style="color:${downColor};">↓ ${c.speed_down_fmt || '0 B/s'}</span>
-				<span id="card-up-${c.name}" style="color:${upColor};">↑ ${c.speed_up_fmt || '0 B/s'}</span>
-			</div>
-		` : '';
+		const speedRowHtml = speedOn ? `<div class="live-speed-row"><span id="card-down-${c.name}" style="color:${downColor};">↓ ${c.speed_down_fmt || '0 B/s'}</span><span id="card-up-${c.name}" style="color:${upColor};">↑ ${c.speed_up_fmt || '0 B/s'}</span></div>` : '';
+		const trafficBoxHtml = statsOn ? `<div class="card-traffic"><div><div class="traffic-main">Трафик: ${totalBytes}</div><div class="traffic-sub">↓ ${downBytes} / ↑ ${upBytes}</div></div><button class="btn btn-sm" style="padding:4px 8px;" onclick="resetClientTraffic('${c.name}')">↺</button></div>` : '';
+		const sitesBtnHtml = snifferOn ? `<button class="btn btn-sm" onclick="openDomainsModal('${c.name}')" title="Сайты и IP">🌐</button>` : '';
 
 		const actionsHtml = c.status === 'valid'
-			? `
-				<button class="btn btn-sm" onclick="showQrModal('${c.name}', '${c.share_token}')" title="QR-код">📱</button>
-				<button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')" title="Ссылка">🔗</button>
-				<button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${c.name}')" title="Скачать .ovpn">⬇️</button>
-				<button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${c.name}')">${isPaused ? '▶️' : '⏸️'}</button>
-				<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', false)" title="Отозвать">🚫</button>
-			`
-			: `<button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
+			? `${sitesBtnHtml}<button class="btn btn-sm" onclick="showQrModal('${c.name}', '${c.share_token}')">📱</button><button class="btn btn-sm" onclick="copyShareUrl('${c.share_token}')">🔗</button><button class="btn btn-sm btn-primary" onclick="downloadClientConfig('${c.name}')">⬇️</button><button class="btn btn-sm ${isPaused ? 'btn-primary' : 'btn-warning'}" onclick="togglePauseClient('${c.name}')">${isPaused ? '▶️' : '⏸️'}</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', false)">🚫</button>`
+			: `${sitesBtnHtml}<button class="btn btn-sm btn-success" onclick="restoreRevokedClient('${c.name}')">♻️ Восстановить</button><button class="btn btn-sm btn-danger" onclick="revokeClient('${c.name}', true)">🗑️ Удалить</button>`;
 
 		return `
 			<div class="client-card ${isOnline ? 'online-card' : ''} ${isPaused ? 'paused-card' : ''}" id="client-card-${c.name}">
 				<div>
-					<div class="card-top">
-						<div class="client-name">${c.name}</div>
-						<div class="client-badge ${badgeCls}">${statusLabel}</div>
-					</div>
+					<div class="card-top"><div class="client-name">${c.name}</div><div class="client-badge ${badgeCls}">${statusLabel}</div></div>
 					${noteHtml}
 					<div class="card-details">
 						<div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
 							<span id="card-online-${c.name}">${onlineHtml}</span>
 							<span style="font-size:11px;">${c.created} → ${c.expires}</span>
 						</div>
-						<div class="session-meta ${isOnline ? '' : 'offline-meta'}" id="card-meta-${c.name}">
-							<div class="session-row">
-								<span>🌐 <strong id="card-ip-${c.name}">${c.real_ip}</strong></span>
-								<span>TUN: <strong id="card-tun-${c.name}">${c.virt_ip}</strong></span>
-							</div>
+						<div class="session-meta ${isOnline ? '' : 'offline-meta'}">
+							<div class="session-row"><span>🌐 <strong>${c.real_ip}</strong></span><span>TUN: <strong>${c.virt_ip}</strong></span></div>
 							${speedRowHtml}
 						</div>
+						${trafficBoxHtml}
 						<div class="card-extra-meta">
 							<div class="card-extra-line"><span>Подключён:</span><strong>${formatTs(c.last_connected_at)}</strong></div>
 							<div class="card-extra-line"><span>Отключён:</span><strong>${formatTs(c.last_disconnected_at)}</strong></div>
-							<div class="card-extra-line"><span>Лимит:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
+							<div class="card-extra-line"><span>Лимит скорости:</span><strong>${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</strong></div>
 						</div>
 					</div>
 				</div>
@@ -1416,8 +1697,25 @@ function renderClientsGrid(clients) {
 	}).join('');
 }
 
+function setGlobalSpeedPreset(kbps) {
+	const el = document.getElementById('globalSpeedLimitKbps');
+	if (el) el.value = kbps;
+}
+
 function renderSpeedLimitsEditor() {
 	const mode = document.getElementById('speedLimitMode')?.value || panelConfig.speed_limit_mode || 'none';
+	const globalGroup = document.getElementById('globalLimitGroup');
+	const clientsCard = document.getElementById('speedLimitsClientsCard');
+	const hintEl = document.getElementById('speedLimitsClientsHint');
+
+	if (globalGroup) globalGroup.style.display = (mode === 'global' || mode === 'selected') ? 'block' : 'none';
+	if (clientsCard) clientsCard.style.opacity = (mode === 'selected' || mode === 'per_client') ? '1' : '0.45';
+	if (hintEl) {
+		if (mode === 'selected') hintEl.textContent = 'Отметьте клиентов, к которым применится общий лимит.';
+		else if (mode === 'per_client') hintEl.textContent = 'Укажите лимит в Кбит/с для каждого клиента (0 = без лимита).';
+		else hintEl.textContent = 'Выберите режим «Для выбранных» или «Индивидуально» для настройки по клиентам.';
+	}
+
 	let selected = [];
 	try { selected = JSON.parse(panelConfig.selected_limit_clients || '[]'); } catch (e) {}
 	const selSet = new Set(selected);
@@ -1431,15 +1729,23 @@ function renderSpeedLimitsEditor() {
 	}
 
 	box.innerHTML = validClients.map(c => {
-		const checked = selSet.has(c.name) ? 'checked' : '';
-		const perVal = c.speed_limit_kbps || 0;
+		const safeName = escapeHtml(c.name);
+		const dot = c.is_online ? '🟢' : '⚪';
+		const cbHtml = mode === 'selected'
+			? `<input type="checkbox" class="limit-client-cb" data-client="${safeName}" ${selSet.has(c.name) ? 'checked' : ''}>`
+			: '';
+		const inputHtml = mode === 'per_client'
+			? `<input type="number" min="0" step="64" class="search-input limit-per-client-input" data-client="${safeName}" value="${c.speed_limit_kbps || 0}" placeholder="0" style="width:110px; padding:6px 10px; font-size:12.5px;"><span style="font-size:11px; color:var(--text-muted);">kbps</span>`
+			: `<span style="font-size:11.5px; color:var(--text-muted); font-family:'JetBrains Mono',monospace;">${c.speed_limit_kbps > 0 ? c.speed_limit_kbps + ' kbps' : '—'}</span>`;
+
 		return `
-			<div class="domain-row">
-				<label style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1;">
-					<input type="checkbox" class="limit-client-cb" data-client="${c.name}" ${checked} ${mode !== 'selected' ? 'disabled' : ''}>
-					<span style="font-weight:600; font-size:12.5px;">${c.name}</span>
+			<div class="limit-row">
+				<label class="limit-row-left" style="${mode === 'selected' ? 'cursor:pointer;' : ''}">
+					${cbHtml}
+					<span>${dot}</span>
+					<span class="limit-row-name">${safeName}</span>
 				</label>
-				<input type="number" min="0" step="64" class="search-input limit-per-client-input" data-client="${c.name}" value="${perVal}" placeholder="kbps" style="width:115px; padding:6px 8px; font-size:12px;" ${mode !== 'per_client' ? 'disabled' : ''}>
+				<div class="limit-row-right">${inputHtml}</div>
 			</div>
 		`;
 	}).join('');
@@ -1450,92 +1756,186 @@ async function saveSpeedLimits() {
 	const globalKbps = parseInt(document.getElementById('globalSpeedLimitKbps').value) || 0;
 	const selectedClients = Array.from(document.querySelectorAll('.limit-client-cb:checked')).map(el => el.dataset.client);
 	const perClientLimits = {};
-	document.querySelectorAll('.limit-per-client-input').forEach(el => {
-		perClientLimits[el.dataset.client] = parseInt(el.value) || 0;
-	});
+	document.querySelectorAll('.limit-per-client-input').forEach(el => { perClientLimits[el.dataset.client] = parseInt(el.value) || 0; });
 
-	try {
-		const r = await fetch('/api/speed-limits', {
-			method: 'POST', headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				speed_limit_mode: mode,
-				global_speed_limit_kbps: globalKbps,
-				selected_limit_clients: selectedClients,
-				per_client_limits: perClientLimits,
-			})
-		});
-		const d = await r.json();
-		if (d.success) {
-			panelConfig.speed_limit_mode = mode;
-			panelConfig.global_speed_limit_kbps = String(globalKbps);
-			panelConfig.selected_limit_clients = JSON.stringify(selectedClients);
-			showToast('✅ Лимиты скорости применены');
-			loadClients();
-		} else {
-			showToast('❌ ' + (d.message || 'Ошибка'), 'error');
-		}
-	} catch (e) { showToast('❌ Ошибка сети', 'error'); }
+	const r = await fetch('/api/speed-limits', {
+		method: 'POST', headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ speed_limit_mode: mode, global_speed_limit_kbps: globalKbps, selected_limit_clients: selectedClients, per_client_limits: perClientLimits })
+	});
+	const d = await r.json();
+	if (d.success) {
+		panelConfig.speed_limit_mode = mode;
+		panelConfig.global_speed_limit_kbps = String(globalKbps);
+		panelConfig.selected_limit_clients = JSON.stringify(selectedClients);
+		showToast('✅ Лимиты скорости применены');
+		loadClients();
+	} else showToast('❌ ' + (d.message || 'Ошибка'), 'error');
+}
+
+function getColorForClient(name) {
+	if (!clientColorRegistry[name]) { clientColorRegistry[name] = colorPalette[paletteIdx % colorPalette.length]; paletteIdx++; }
+	return clientColorRegistry[name];
+}
+function setWindowTime(seconds) {
+	selectedWindowSeconds = seconds;
+	document.querySelectorAll('.btn-group-btn').forEach(b => b.classList.remove('active'));
+	if (seconds === 30) document.getElementById('btnWin30').classList.add('active');
+	if (seconds === 60) document.getElementById('btnWin60').classList.add('active');
+	if (seconds === 300) document.getElementById('btnWin300').classList.add('active');
+	fetchHistoryAndSync();
 }
 
 function initSpeedChart() {
 	const ctx = document.getElementById('speedChartCanvas').getContext('2d');
+	const isMobile = window.innerWidth <= 768;
+
 	speedChart = new Chart(ctx, {
 		type: 'line',
 		data: { labels: [], datasets: [] },
 		options: {
-			responsive: true, maintainAspectRatio: false, animation: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			animation: false,
+			interaction: { mode: 'nearest', intersect: false },
+			plugins: {
+				legend: { display: false },
+				tooltip: {
+					backgroundColor: 'rgba(15, 23, 42, 0.95)',
+					titleColor: '#f8fafc',
+					bodyColor: '#cbd5e1',
+					borderColor: '#334155',
+					borderWidth: 1,
+					padding: isMobile ? 8 : 12,
+					boxPadding: 4,
+					filter: item => item.parsed.y > 0 || !isMobile,
+					callbacks: {
+						label: ctx => ` ${ctx.dataset.label}: ${formatSpeed(ctx.parsed.y)}`
+					}
+				}
+			},
 			scales: {
-				x: { ticks: { color: '#64748b' } },
-				y: { beginAtZero: true, ticks: { color: '#64748b', callback: v => formatSpeed(v) } }
+				x: {
+					grid: { color: 'rgba(148, 163, 184, 0.08)' },
+					ticks: { color: '#64748b', font: { size: isMobile ? 10 : 11 }, maxTicksLimit: isMobile ? 5 : 10 }
+				},
+				y: {
+					beginAtZero: true,
+					grid: { color: 'rgba(148, 163, 184, 0.08)' },
+					ticks: { color: '#64748b', font: { size: isMobile ? 10 : 11 }, callback: v => formatSpeed(v) }
+				}
 			}
 		}
 	});
 }
-function setWindowTime(sec) {
-	selectedWindowSeconds = sec;
-	document.querySelectorAll('.btn-group-btn').forEach(b => b.classList.remove('active'));
-	if (sec === 30) document.getElementById('btnWin30').classList.add('active');
-	if (sec === 60) document.getElementById('btnWin60').classList.add('active');
-	if (sec === 300) document.getElementById('btnWin300').classList.add('active');
-	fetchHistoryAndSync();
-}
+
 async function fetchHistoryAndSync() {
-	try {
-		const r = await fetch(`/api/clients/speeds/history?seconds=${selectedWindowSeconds}`);
-		const d = await r.json();
-		if (d.history) { speedDataPoints = d.history; renderChartData(); }
-	} catch (e) {}
+	try { const r = await fetch(`/api/clients/speeds/history?seconds=${selectedWindowSeconds}`); const d = await r.json(); if (d.history) { speedDataPoints = d.history; renderChartData(); } } catch (e) {}
+}
+function syncChartUserDropdown() {
+	const sel = document.getElementById('chartClientFilter');
+	if (!sel) return;
+	const currentVal = sel.value || '__ALL__';
+	const namesSet = new Set();
+	allClientsList.forEach(c => { if (c.status === 'valid') namesSet.add(c.name); });
+	Object.keys(latestLiveSpeeds).forEach(name => namesSet.add(name));
+	const sortedNames = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
+	let html = `<option value="__ALL__">👥 Все клиенты</option>`;
+	sortedNames.forEach(name => { html += `<option value="${name}"${name === currentVal ? ' selected' : ''}>${latestLiveSpeeds[name] ? '🟢 ' : ''}${name}</option>`; });
+	sel.innerHTML = html;
+	sel.value = namesSet.has(currentVal) ? currentVal : '__ALL__';
 }
 function renderChartData() {
 	if (!speedChart) return;
 	const metric = document.getElementById('chartMetricType').value;
-	const target = document.getElementById('chartClientFilter').value;
+	const targetClient = document.getElementById('chartClientFilter').value;
+	const labels = speedDataPoints.map(p => p.time);
 	const names = new Set();
-	speedDataPoints.forEach(p => Object.keys(p.speeds || {}).forEach(c => { if (target === '__ALL__' || target === c) names.add(c); }));
-	speedChart.data.labels = speedDataPoints.map(p => p.time);
-	speedChart.data.datasets = Array.from(names).map((c, idx) => ({
-		label: c,
-		data: speedDataPoints.map(p => (p.speeds && p.speeds[c]) ? (p.speeds[c][metric] || 0) : 0),
-		borderColor: colorPalette[idx % colorPalette.length],
-		borderWidth: 2, pointRadius: 0
-	}));
+	speedDataPoints.forEach(p => Object.keys(p.speeds || {}).forEach(c => { if (targetClient === '__ALL__' || targetClient === c) names.add(c); }));
+	speedChart.data.labels = labels;
+	speedChart.data.datasets = Array.from(names).sort().map(client => {
+		const color = getColorForClient(client);
+		return { label: client, data: speedDataPoints.map(p => (p.speeds && p.speeds[client]) ? (p.speeds[client][metric] || 0) : 0), borderColor: color, backgroundColor: color + '15', fill: targetClient !== '__ALL__', borderWidth: 2, tension: 0.25, pointRadius: 0 };
+	});
 	speedChart.update('none');
 }
+function updateClientCardsRealtime(speedsMap) {
+	allClientsList.forEach(c => {
+		const live = speedsMap[c.name];
+		c.is_online = Boolean(live && !c.is_paused);
+		if (live && !c.is_paused) {
+			c.speed_down = live.down || 0;
+			c.speed_up = live.up || 0;
+			c.speed_down_fmt = live.down_fmt || '0 B/s';
+			c.speed_up_fmt = live.up_fmt || '0 B/s';
+			if (live.real_ip) c.real_ip = live.real_ip;
+			if (live.virt_ip) c.virt_ip = live.virt_ip;
+		} else {
+			c.speed_down = 0;
+			c.speed_up = 0;
+			c.speed_down_fmt = '0 B/s';
+			c.speed_up_fmt = '0 B/s';
+		}
+
+		const cardEl = document.getElementById(`client-card-${c.name}`);
+		if (!cardEl) return;
+
+		cardEl.classList.toggle('online-card', c.is_online);
+		cardEl.classList.toggle('paused-card', c.is_paused);
+
+		const statusEl = document.getElementById(`card-online-${c.name}`);
+		if (statusEl) {
+			if (c.is_paused) {
+				statusEl.innerHTML = `<span style="color:var(--warning); font-weight:600;">⏸️ НА ПАУЗЕ</span>`;
+			} else {
+				statusEl.innerHTML = c.is_online
+					? `<span style="color:var(--success); font-weight:600;">🟢 Онлайн</span>`
+					: `<span style="color:var(--text-muted);">⚪ Офлайн</span>`;
+			}
+		}
+
+		const downEl = document.getElementById(`card-down-${c.name}`);
+		if (downEl) {
+			downEl.textContent = `↓ ${c.speed_down_fmt}`;
+			downEl.style.color = c.is_online ? '#60a5fa' : 'var(--text-muted)';
+		}
+
+		const upEl = document.getElementById(`card-up-${c.name}`);
+		if (upEl) {
+			upEl.textContent = `↑ ${c.speed_up_fmt}`;
+			upEl.style.color = c.is_online ? '#34d399' : 'var(--text-muted)';
+		}
+	});
+}
+
 async function pollSpeedTick() {
 	if (document.hidden) return;
 	try {
-		const r = await fetch('/api/clients/speeds');
-		const d = await r.json();
-		if (!d.speeds) return;
-		latestLiveSpeeds = d.speeds;
+		const res = await fetch('/api/clients/speeds');
+		const data = await res.json();
+		if (!data.speeds) return;
+		latestLiveSpeeds = data.speeds;
 		const nowTs = Date.now() / 1000;
-		speedDataPoints.push({ time: d.timestamp, ts: nowTs, speeds: d.speeds });
+		const timeStr = data.timestamp || new Date().toLocaleTimeString();
+
+		speedDataPoints.push({ time: timeStr, ts: nowTs, speeds: data.speeds });
 		speedDataPoints = speedDataPoints.filter(p => p.ts >= nowTs - selectedWindowSeconds);
+
 		let td = 0, tu = 0;
-		Object.values(d.speeds).forEach(s => { td += s.down || 0; tu += s.up || 0; });
+		Object.values(data.speeds).forEach(s => { td += s.down || 0; tu += s.up || 0; });
 		document.getElementById('liveTotalDown').textContent = formatSpeed(td);
 		document.getElementById('liveTotalUp').textContent = formatSpeed(tu);
-		document.getElementById('liveActiveCount').textContent = Object.keys(d.speeds).length;
+
+		const onlineCount = Object.keys(data.speeds).length;
+		document.getElementById('liveActiveCount').textContent = onlineCount;
+		document.getElementById('lastSyncTime').textContent = `Обновлено: ${timeStr}`;
+
+		const validTotal = allClientsList.filter(c => c.status === 'valid').length;
+		if (validTotal > 0) {
+			document.getElementById('activeClientsCount').textContent = `${onlineCount} / ${validTotal}`;
+		}
+
+		updateClientCardsRealtime(data.speeds);
+		if (!chartFilterDirty) syncChartUserDropdown();
 		if (document.getElementById('tab-speed').classList.contains('active')) renderChartData();
 	} catch (e) {}
 }
@@ -1543,8 +1943,8 @@ function changePollInterval() {
 	const ms = parseInt(document.getElementById('chartPollInterval').value) || 1000;
 	if (speedPollTimer) clearInterval(speedPollTimer);
 	speedPollTimer = setInterval(pollSpeedTick, ms);
+	pollSpeedTick();
 }
-
 async function pollSystemStats() {
 	if (document.hidden || panelConfig.enable_hardware_bar !== "1") return;
 	try {
@@ -1559,13 +1959,135 @@ async function pollSystemStats() {
 	} catch (e) {}
 }
 
+async function loadInfographicsView() {
+	const res = await fetch('/api/infographics');
+	const json = await res.json();
+	if (!json.success) return;
+	const d = json.data;
+	document.getElementById('infoTotalSent').textContent = formatBytes(d.total_sent);
+	document.getElementById('infoTotalRecv').textContent = formatBytes(d.total_recv);
+	document.getElementById('infoTotalAll').textContent = formatBytes(d.total_sent + d.total_recv);
+
+	if (infoClientsChart) infoClientsChart.destroy();
+	infoClientsChart = new Chart(document.getElementById('infoTopClientsChart').getContext('2d'), {
+		type: 'bar', data: {
+			labels: d.top_clients.map(x => x.name),
+			datasets: [
+				{ label: 'Download (GB)', data: d.top_clients.map(x => +(x.sent / (1024**3)).toFixed(2)), backgroundColor: '#3b82f6', borderRadius: 6 },
+				{ label: 'Upload (GB)', data: d.top_clients.map(x => +(x.recv / (1024**3)).toFixed(2)), backgroundColor: '#10b981', borderRadius: 6 }
+			]
+		}, options: { responsive: true, maintainAspectRatio: false }
+	});
+	if (infoStatusChart) infoStatusChart.destroy();
+	const sc = d.status_counts;
+	infoStatusChart = new Chart(document.getElementById('infoStatusPieChart').getContext('2d'), {
+		type: 'doughnut', data: { labels: ['Online', 'Offline', 'Paused', 'Revoked'], datasets: [{ data: [sc.online, sc.offline, sc.paused, sc.revoked], backgroundColor: ['#10b981', '#475569', '#f59e0b', '#ef4444'], borderWidth: 0 }] },
+		options: { responsive: true, maintainAspectRatio: false }
+	});
+	if (infoDomainsChart) infoDomainsChart.destroy();
+	infoDomainsChart = new Chart(document.getElementById('infoTopDomainsChart').getContext('2d'), {
+		type: 'bar', data: { labels: d.top_domains.map(x => x.domain), datasets: [{ label: 'Requests', data: d.top_domains.map(x => x.count), backgroundColor: '#8b5cf6', borderRadius: 6 }] },
+		options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+	});
+}
+
+function onTabGlobalDomainInput() {
+	const input = document.getElementById('tabGlobalDomainSearch');
+	const clearBtn = document.getElementById('clearTabGlobalDomainBtn');
+	if (clearBtn && input) clearBtn.style.display = input.value.length > 0 ? 'inline-flex' : 'none';
+	fetchTabGlobalDomains();
+}
+function clearTabGlobalDomainSearch() { const i = document.getElementById('tabGlobalDomainSearch'); if (i) i.value = ''; onTabGlobalDomainInput(); }
+async function fetchTabGlobalDomains() {
+	const q = (document.getElementById('tabGlobalDomainSearch')?.value || '').trim();
+	const box = document.getElementById('tabGlobalDomainsListBox');
+	if (!box) return;
+	const r = await fetch(`/api/domains/global?q=${encodeURIComponent(q)}&limit=500`);
+	const d = await r.json();
+	const list = d.domains || [];
+	box.innerHTML = list.map(item => `
+		<div class="domain-row">
+			<div class="domain-row-main">
+				<span style="font-size:11px; padding:3px 8px; border-radius:6px; background:rgba(59,130,246,0.15); color:#60a5fa; font-weight:600; font-family:'JetBrains Mono',monospace;">👤 ${item.client_name}</span>
+				<span class="domain-name">${item.domain}</span>
+				${item.count > 1 ? `<span class="domain-count-badge">×${item.count}</span>` : ''}
+			</div>
+			<div class="domain-row-meta">
+				<span class="domain-time">${item.time_fmt}</span>
+				<button class="btn btn-sm btn-danger" style="padding:3px 8px; font-size:11px;" onclick="hideDomainFromSniffer('${item.domain}')">🚫 Скрыть</button>
+			</div>
+		</div>
+	`).join('') || `<div style="text-align:center; padding:40px; color:var(--text-muted);">Записей не найдено</div>`;
+}
+async function hideDomainFromSniffer(domain) {
+	if (!confirm(`Исключить домен "${domain}" и поддомены?`)) return;
+	const r = await fetch('/api/sniffer/ignored', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ domain }) });
+	const d = await r.json();
+	if (d.success) { showToast(`Домен ${domain} скрыт`); fetchTabGlobalDomains(); }
+}
+function openIgnoredDomainsModal() { document.getElementById('ignoredDomainsModal').classList.add('active'); loadIgnoredDomainsList(); }
+async function loadIgnoredDomainsList() {
+	const r = await fetch('/api/sniffer/ignored'); const d = await r.json(); const list = d.ignored || [];
+	document.getElementById('ignoredDomainsCountBadge').textContent = list.length;
+	document.getElementById('ignoredDomainsListBox').innerHTML = list.map(item => `<div class="domain-row"><span class="domain-name" style="color:var(--danger);">${item.domain}</span><button class="btn btn-sm btn-danger" onclick="deleteIgnoredDomain(${item.id})">🗑️ Восстановить</button></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--text-muted);">Исключений нет</div>';
+}
+async function addManualIgnoredDomain() {
+	const input = document.getElementById('newIgnoredDomainInput'); const domain = input.value.trim(); if (!domain) return;
+	const r = await fetch('/api/sniffer/ignored', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ domain }) });
+	const d = await r.json(); if (d.success) { input.value = ''; loadIgnoredDomainsList(); fetchTabGlobalDomains(); }
+}
+async function deleteIgnoredDomain(id) { await fetch(`/api/sniffer/ignored/${id}`, { method: 'DELETE' }); loadIgnoredDomainsList(); }
+
+function openDomainsModal(name) {
+	currentDomainsClient = name;
+	document.getElementById('domainsModalTitle').textContent = `🌐 Сайты: ${name}`;
+	document.getElementById('domainSearchInput').value = '';
+	switchDomainTab('history');
+	document.getElementById('domainsModal').classList.add('active');
+}
+function switchDomainTab(tabName) {
+	document.querySelectorAll('#domainsModal .d-tab-btn').forEach(b => b.classList.remove('active'));
+	document.querySelectorAll('#domainsModal .d-tab-view').forEach(v => v.classList.remove('active'));
+	document.getElementById(`d-tab-${tabName}`)?.classList.add('active');
+	document.getElementById(`d-view-${tabName}`)?.classList.add('active');
+	if (tabName === 'history') fetchClientDomains();
+	else if (tabName === 'top') fetchClientTopDomains();
+	else if (tabName === 'ips') fetchClientIps();
+}
+async function fetchClientDomains() {
+	if (!currentDomainsClient) return;
+	const q = document.getElementById('domainSearchInput').value.trim();
+	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/domains?q=${encodeURIComponent(q)}`);
+	const d = await r.json(); const list = d.domains || [];
+	document.getElementById('domainsCountBadge').textContent = `Записей: ${list.length}`;
+	document.getElementById('domainsListBox').innerHTML = list.map(i => `<div class="domain-row"><span class="domain-name">${i.domain} ${i.count > 1 ? '(×' + i.count + ')' : ''}</span><span class="domain-time">${i.time_fmt}</span></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+}
+async function fetchClientTopDomains() {
+	if (!currentDomainsClient) return;
+	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/domains`);
+	const d = await r.json(); const list = d.top_domains || [];
+	document.getElementById('domainsTopBox').innerHTML = list.map((i, idx) => `<div class="domain-row"><span class="domain-name">#${idx+1} ${i.domain}</span><strong>${i.count} req</strong></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+}
+async function fetchClientIps() {
+	if (!currentDomainsClient) return;
+	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/ips`);
+	const d = await r.json(); const list = d.ips || [];
+	document.getElementById('ipsListBox').innerHTML = list.map(i => `<div class="domain-row" style="flex-direction:column; align-items:stretch;"><div><strong style="color:#34d399;">${i.real_ip}</strong> (TUN: ${i.virt_ip})</div><div style="font-size:11px; color:var(--text-muted);">Вход: ${i.connected_fmt} | Выход: ${i.disconnected_fmt}</div></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+}
+async function clearClientDomains() {
+	if (!currentDomainsClient || !confirm(`Очистить историю для ${currentDomainsClient}?`)) return;
+	await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/domains`, { method: 'DELETE' });
+	fetchClientDomains();
+}
+
 async function submitCreateClient() {
 	const name = document.getElementById('newClientName').value.trim();
 	const note = document.getElementById('newClientNote').value.trim();
+	const limit_gb = parseFloat(document.getElementById('newClientLimit').value) || 0;
 	const ttl_days = parseInt(document.getElementById('newClientTtl').value) || 0;
 	if (!name) return;
 	closeModals();
-	const r = await fetch('/api/clients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, note, ttl_days }) });
+	const r = await fetch('/api/clients', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, note, limit_gb, ttl_days }) });
 	const d = await r.json();
 	if (d.success) { showToast('✅ Клиент создан'); await loadClients(); downloadClientConfig(name); }
 	else showToast('❌ ' + (d.message || 'Ошибка'), 'error');
@@ -1575,18 +2097,25 @@ async function togglePauseClient(name) {
 	const d = await r.json();
 	if (d.success) { showToast(d.is_paused ? '⏸️ На паузе' : '▶️ Активен'); loadClients(); }
 }
+async function resetClientTraffic(name) {
+	if (!confirm(`Обнулить трафик ${name}?`)) return;
+	await fetch(`/api/clients/${encodeURIComponent(name)}/traffic`, { method: 'DELETE' });
+	loadClients();
+}
 async function revokeClient(name, permanent) {
-	if (!confirm(permanent ? `Удалить клиента ${name} навсегда?` : `Отозвать сертификат ${name}?`)) return;
+	if (!confirm(permanent ? `Удалить ${name} навсегда?` : `Отозвать ${name}?`)) return;
 	const r = await fetch(`/api/clients/${encodeURIComponent(name)}?permanent=${permanent}`, { method: 'DELETE' });
 	const d = await r.json();
 	if (d.success) { showToast('✅ Готово'); loadClients(); }
-	else showToast('❌ ' + (d.message || 'Ошибка'), 'error');
+}
+async function restoreRevokedClient(name) {
+	if (!confirm(`Восстановить ${name}?`)) return;
+	const r = await fetch(`/api/clients/${encodeURIComponent(name)}/restore`, { method: 'POST' });
+	const d = await r.json();
+	if (d.success) { showToast('✅ Восстановлен'); loadClients(); }
 }
 function downloadClientConfig(name) { location.href = `/api/clients/${encodeURIComponent(name)}/download`; }
-function copyShareUrl(token) {
-	const link = `${location.origin}/d/${encodeURIComponent(token)}`;
-	copyToClipboard(link).then(() => showToast('✅ Ссылка скопирована'));
-}
+function copyShareUrl(token) { copyToClipboard(`${location.origin}/d/${encodeURIComponent(token)}`).then(() => showToast('✅ Ссылка скопирована')); }
 function showQrModal(name, token) {
 	const link = `${location.origin}/d/${encodeURIComponent(token)}`;
 	document.getElementById('qrModalTitle').textContent = `📱 ${name}`;
@@ -1605,136 +2134,161 @@ async function loadRoutingView() {
 	document.getElementById('wgText').textContent = d.wg_up ? 'АКТИВЕН' : 'ОТКЛЮЧЕН';
 	document.getElementById('wgText').style.color = d.wg_up ? 'var(--success)' : 'var(--danger)';
 	document.getElementById('torrentBlockCheck').checked = Boolean(d.torrent_block);
+
+	if (d.wg_endpoint) {
+		document.getElementById('remoteEndpointConnected').style.display = 'block';
+		document.getElementById('remoteEndpointForm').style.display = 'none';
+		document.getElementById('remoteEndpointIp').textContent = d.wg_endpoint;
+		document.getElementById('remoteEndpointStatus').textContent = '🟢 ' + (d.wg_up ? 'Подключено' : 'Не активно');
+	} else {
+		document.getElementById('remoteEndpointConnected').style.display = 'none';
+		document.getElementById('remoteEndpointForm').style.display = 'block';
+		document.getElementById('remoteEndpointStatus').textContent = '⚪ Не настроено';
+	}
+	await loadSplitLinks();
 	await loadAdblockStatus();
+	renderPendingLinks();
+}
+function showRemoteReconfigure() { document.getElementById('remoteEndpointConnected').style.display = 'none'; document.getElementById('remoteEndpointForm').style.display = 'block'; }
+function hideRemoteReconfigure() { document.getElementById('remoteEndpointForm').style.display = 'none'; document.getElementById('remoteEndpointConnected').style.display = 'block'; }
+
+function renderPendingLinks() {
+	const box = document.getElementById('pendingLinksBox');
+	if (!box) return;
+	box.innerHTML = pendingLinks.map((p, idx) => `
+		<div class="pending-link-row">
+			<div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#93c5fd;">🔗 ${p.url} (${(p.ips || []).join(', ')})</div>
+			<div class="pending-actions">
+				<div class="route-via-group">
+					<button class="route-via-btn ${p.route_via === 'split' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'split')">🟡 Напрямую</button>
+					<button class="route-via-btn ${p.route_via === 'wg' ? 'active' : ''}" onclick="setPendingRoute(${idx}, 'wg')">🟣 Через WG</button>
+				</div>
+				<button class="btn btn-sm btn-primary" onclick="savePendingLink(${idx})">💾</button>
+				<button class="btn btn-sm btn-danger" onclick="cancelPendingLink(${idx})">✕</button>
+			</div>
+		</div>
+	`).join('');
+}
+function setPendingRoute(idx, route) { if (pendingLinks[idx]) { pendingLinks[idx].route_via = route; renderPendingLinks(); } }
+function cancelPendingLink(idx) { pendingLinks.splice(idx, 1); renderPendingLinks(); }
+async function savePendingLink(idx) {
+	const p = pendingLinks[idx]; if (!p) return;
+	const r = await fetch('/api/routing/save-link', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url: p.url, resolved_ips: (p.ips || []).join(','), route_via: p.route_via }) });
+	const d = await r.json(); if (d.success) { pendingLinks.splice(idx, 1); renderPendingLinks(); loadSplitLinks(); }
+}
+async function loadSplitLinks() {
+	const r = await fetch('/api/routing/links'); const d = await r.json(); const box = document.getElementById('splitLinksList');
+	if (!box) return;
+	box.innerHTML = (d.links || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} [${l.route_via.toUpperCase()}]</span><button class="btn btn-sm btn-danger" onclick="removeSplitLink(${l.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+}
+async function removeSplitLink(id) { await fetch(`/api/routing/links/${id}`, { method: 'DELETE' }); loadSplitLinks(); }
+async function resolveLink() {
+	const url = document.getElementById('splitLinkUrl').value.trim(); if (!url) return;
+	const r = await fetch('/api/routing/resolve-link', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+	const d = await r.json();
+	if (d.success) { pendingLinks.push({ url: d.url || url, ips: d.ips || [], route_via: d.has_conflict ? 'wg' : 'split' }); document.getElementById('splitLinkUrl').value = ''; renderPendingLinks(); }
 }
 async function saveRoutingSettings() {
-	const r = await fetch('/api/routing/settings', {
-		method: 'POST', headers: {'Content-Type':'application/json'},
-		body: JSON.stringify({
-			cidr_url: document.getElementById('cidrUrlInput').value.trim(),
-			custom_cidrs: document.getElementById('customCidrsInput').value.trim(),
-			routing_mode: document.getElementById('routingModeSelect').value,
-			torrent_block: document.getElementById('torrentBlockCheck').checked
-		})
-	});
-	const d = await r.json();
-	if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
+	const r = await fetch('/api/routing/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cidr_url: document.getElementById('cidrUrlInput').value.trim(), custom_cidrs: document.getElementById('customCidrsInput').value.trim(), routing_mode: document.getElementById('routingModeSelect').value, torrent_block: document.getElementById('torrentBlockCheck').checked }) });
+	const d = await r.json(); if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
 }
 async function updateCidrIps() {
-	const r = await fetch('/api/routing/update_ips', { method: 'POST' });
-	const d = await r.json();
+	const r = await fetch('/api/routing/update_ips', { method: 'POST' }); const d = await r.json();
 	if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ CIDR обновлены'); loadRoutingView(); } });
 }
 async function setupRemoteTunnel() {
-	const remote_ip = document.getElementById('remoteServerIp').value.trim();
-	const remote_pass = document.getElementById('remoteServerPass').value;
+	const remote_ip = document.getElementById('remoteServerIp').value.trim(); const remote_pass = document.getElementById('remoteServerPass').value;
 	if (!remote_ip || !remote_pass) return showToast('❌ Укажите IP и пароль', 'error');
 	const r = await fetch('/api/routing/setup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ remote_ip, remote_pass }) });
-	const d = await r.json();
-	if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ Туннель настроен'); loadRoutingView(); } });
+	const d = await r.json(); if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ Туннель настроен'); loadRoutingView(); } });
 }
 
 async function loadAdblockStatus() {
-	const r = await fetch('/api/adblock/status');
-	const j = await r.json();
-	if (!j.success) return;
-	const d = j.data;
+	const r = await fetch('/api/adblock/status'); const j = await r.json(); if (!j.success) return; const d = j.data;
 	document.getElementById('adblockEnableToggle').checked = Boolean(d.enabled);
-	document.getElementById('adblockStatusLabel').textContent = `Статус: ${d.enabled ? '🟢 АКТИВЕН' : '⚪ ОТКЛЮЧЕН'} | Правил: ${(d.blocked_total || 0).toLocaleString()}`;
-	document.getElementById('adblockListsBox').innerHTML = (d.lists || []).map(l => `
-		<div class="domain-row"><span class="domain-name">${l.url} (${l.domains_count})</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockList(${l.id})">✕</button></div>
-	`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Списков нет</div>';
-	document.getElementById('adblockDomainsBox').innerHTML = (d.domains || []).map(dom => `
-		<div class="domain-row"><span class="domain-name">${dom.domain} [${dom.list_type}]</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockDomain(${dom.id})">✕</button></div>
-	`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Доменов нет</div>';
+	document.getElementById('adblockStatusLabel').textContent = `Статус: ${d.enabled ? '🟢 АКТИВЕН' : '⚪ ОТКЛЮЧЕН'} | Правил: ${(d.blocked_total || 0).toLocaleString()} (DNS: ${d.dns_ip})`;
+	document.getElementById('adblockListsBox').innerHTML = (d.lists || []).map(l => `<div class="domain-row"><span class="domain-name">${l.url} (${l.domains_count})</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockList(${l.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Списков нет</div>';
+	document.getElementById('adblockDomainsBox').innerHTML = (d.domains || []).map(dom => `<div class="domain-row"><span class="domain-name">${dom.domain} [${dom.list_type}]</span><button class="btn btn-sm btn-danger" onclick="deleteAdblockDomain(${dom.id})">✕</button></div>`).join('') || '<div style="padding:14px; text-align:center; color:var(--text-muted);">Доменов нет</div>';
 }
 async function toggleAdblock(enable) {
 	const r = await fetch('/api/adblock/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enable }) });
-	const d = await r.json();
-	if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ AdBlock обновлён'); loadAdblockStatus(); } });
+	const d = await r.json(); if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ AdBlock обновлён'); loadAdblockStatus(); } });
 }
 async function addAdblockList() {
-	const url = document.getElementById('adblockListUrl').value.trim();
-	const list_type = document.getElementById('adblockListType').value;
-	if (!url) return;
+	const url = document.getElementById('adblockListUrl').value.trim(); const list_type = document.getElementById('adblockListType').value; if (!url) return;
 	const r = await fetch('/api/adblock/lists', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ url, list_type }) });
-	const d = await r.json();
-	if (d.async && d.task_id) {
-		document.getElementById('adblockListUrl').value = '';
-		watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ Список загружен'); loadAdblockStatus(); } });
-	}
+	const d = await r.json(); if (d.async && d.task_id) { document.getElementById('adblockListUrl').value = ''; watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ Список загружен'); loadAdblockStatus(); } }); }
 }
 async function deleteAdblockList(id) { await fetch(`/api/adblock/lists/${id}`, { method: 'DELETE' }); loadAdblockStatus(); }
 async function addAdblockDomain() {
-	const domain = document.getElementById('adblockDomainInput').value.trim();
-	const list_type = document.getElementById('adblockDomainType').value;
-	if (!domain) return;
+	const domain = document.getElementById('adblockDomainInput').value.trim(); const list_type = document.getElementById('adblockDomainType').value; if (!domain) return;
 	const r = await fetch('/api/adblock/domains', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ domain, list_type }) });
-	const d = await r.json();
-	if (d.success) { document.getElementById('adblockDomainInput').value = ''; loadAdblockStatus(); }
+	const d = await r.json(); if (d.success) { document.getElementById('adblockDomainInput').value = ''; loadAdblockStatus(); }
 }
 async function deleteAdblockDomain(id) { await fetch(`/api/adblock/domains/${id}`, { method: 'DELETE' }); loadAdblockStatus(); }
 
-async function loadConfigView() {
-	const r = await fetch('/api/config');
-	const d = await r.json();
-	if (d.success) document.getElementById('serverConfigText').value = d.config;
-}
-async function saveRawConfig(restart) {
-	const r = await fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ config: document.getElementById('serverConfigText').value, restart }) });
-	const d = await r.json();
-	if (d.success) showToast('✅ server.conf сохранён');
-}
+async function loadConfigView() { const r = await fetch('/api/config'); const d = await r.json(); if (d.success) document.getElementById('serverConfigText').value = d.config; }
+async function saveRawConfig(restart) { const r = await fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ config: document.getElementById('serverConfigText').value, restart }) }); const d = await r.json(); if (d.success) showToast('✅ server.conf сохранён'); }
 
 async function loadSettingsView() {
-	const r = await fetch('/api/settings');
-	const d = await r.json();
+	const r = await fetch('/api/settings'); const d = await r.json();
 	if (d.success && d.settings) {
-		panelConfig = { ...panelConfig, ...d.settings };
-		document.getElementById('setAdminLogin').value = d.settings.admin_login || '';
-		document.getElementById('setPanelPort').value = d.settings.panel_port || 8080;
-		document.getElementById('setOvpnDomain').value = d.settings.ovpn_domain || '';
-		document.getElementById('setEnableSpeed').checked = d.settings.enable_speed_monitor !== "0";
-		document.getElementById('setEnableHwBar').checked = d.settings.enable_hardware_bar !== "0";
-		document.getElementById('setTorrentBlock').checked = d.settings.torrent_block === "1";
-		document.getElementById('speedLimitMode').value = d.settings.speed_limit_mode || 'none';
-		document.getElementById('globalSpeedLimitKbps').value = d.settings.global_speed_limit_kbps || 0;
-		document.getElementById('hardwareBar').style.display = panelConfig.enable_hardware_bar === "1" ? 'grid' : 'none';
-		document.getElementById('tabBtnSpeed').style.display = panelConfig.enable_speed_monitor === "1" ? 'block' : 'none';
+		const s = d.settings;
+		panelConfig = { ...panelConfig, ...s };
+		applyDynamicFeatureVisibility();
+		document.getElementById('setAdminLogin').value = s.admin_login || '';
+		document.getElementById('setAdminPass').value = '';
+		document.getElementById('setSessionAge').value = s.session_max_age || 86400;
+		document.getElementById('setPanelPort').value = s.panel_port || 8080;
+		document.getElementById('setTunIface').value = s.tun_iface || 'tun0';
+		document.getElementById('setMgmtHost').value = s.mgmt_host || '127.0.0.1';
+		document.getElementById('setMgmtPort').value = s.mgmt_port || 7505;
+		document.getElementById('setDomainRetention').value = s.domain_retention || 86400;
+		document.getElementById('setEnableSniffer').checked = s.enable_sniffer !== "0";
+		document.getElementById('setEnableSpeed').checked = s.enable_speed_monitor !== "0";
+		document.getElementById('setEnableStats').checked = s.enable_traffic_stats !== "0";
+		document.getElementById('setEnableIpHistory').checked = s.enable_ip_history !== "0";
+		document.getElementById('setEnableInfographics').checked = s.enable_infographics !== "0";
+		document.getElementById('setEnableHwBar').checked = s.enable_hardware_bar !== "0";
+		document.getElementById('setQuicBlock').checked = s.quic_block !== "0";
+		document.getElementById('setTorrentBlock').checked = s.torrent_block === "1";
+		document.getElementById('speedLimitMode').value = s.speed_limit_mode || 'none';
+		document.getElementById('globalSpeedLimitKbps').value = s.global_speed_limit_kbps || 0;
 	}
 }
-async function saveAllAccountSettings(apply_to_ovpn) {
+async function saveAllAccountSettings(applyToOvpn) {
 	const r = await fetch('/api/settings', {
 		method: 'POST', headers: {'Content-Type':'application/json'},
 		body: JSON.stringify({
 			admin_login: document.getElementById('setAdminLogin').value.trim(),
 			admin_password: document.getElementById('setAdminPass').value,
+			session_max_age: parseInt(document.getElementById('setSessionAge').value) || 86400,
 			panel_port: parseInt(document.getElementById('setPanelPort').value) || 8080,
-			ovpn_domain: document.getElementById('setOvpnDomain').value.trim(),
+			tun_iface: document.getElementById('setTunIface').value.trim() || 'tun0',
+			mgmt_host: document.getElementById('setMgmtHost').value.trim() || '127.0.0.1',
+			mgmt_port: parseInt(document.getElementById('setMgmtPort').value) || 7505,
+			domain_retention: parseInt(document.getElementById('setDomainRetention').value) || 86400,
+			enable_sniffer: document.getElementById('setEnableSniffer').checked ? "1" : "0",
 			enable_speed_monitor: document.getElementById('setEnableSpeed').checked ? "1" : "0",
+			enable_traffic_stats: document.getElementById('setEnableStats').checked ? "1" : "0",
+			enable_ip_history: document.getElementById('setEnableIpHistory').checked ? "1" : "0",
+			enable_infographics: document.getElementById('setEnableInfographics').checked ? "1" : "0",
 			enable_hardware_bar: document.getElementById('setEnableHwBar').checked ? "1" : "0",
+			quic_block: document.getElementById('setQuicBlock').checked ? "1" : "0",
 			torrent_block: document.getElementById('setTorrentBlock').checked ? "1" : "0",
-			apply_to_ovpn
+			apply_to_ovpn: Boolean(applyToOvpn)
 		})
 	});
-	const d = await r.json();
-	if (d.success) { showToast('✅ Настройки сохранены'); loadSettingsView(); }
+	const d = await r.json(); if (d.success) { showToast('✅ Настройки сохранены'); loadSettingsView(); }
 }
-async function controlOvpnService(action) {
-	const r = await fetch(`/api/service/${action}`, { method: 'POST' });
-	const d = await r.json();
-	if (d.success) { showToast(`✅ ${action} OK`); setTimeout(loadClients, 800); }
-}
+async function controlOvpnService(action) { const r = await fetch(`/api/service/${action}`, { method: 'POST' }); const d = await r.json(); if (d.success) { showToast(`✅ ${action} OK`); setTimeout(loadClients, 800); } }
+async function runDbAction(action, confirmMsg) { if (confirmMsg && !confirm(confirmMsg)) return; const r = await fetch('/api/database/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action }) }); const d = await r.json(); if (d.success) { showToast('✅ OK'); loadClients(); } }
 
 function downloadBackupArchive() { location.href = '/api/backup'; closeModals(); }
 async function processRestoreFile(e) {
-	const file = e.target.files[0];
-	if (!file || !confirm('Перезаписать текущую конфигурацию?')) return;
-	closeModals();
-	const fd = new FormData();
-	fd.append('file', file);
-	const r = await fetch('/api/restore', { method: 'POST', body: fd });
-	const d = await r.json();
+	const file = e.target.files[0]; if (!file || !confirm('Перезаписать текущую конфигурацию?')) return; closeModals();
+	const fd = new FormData(); fd.append('file', file);
+	const r = await fetch('/api/restore', { method: 'POST', body: fd }); const d = await r.json();
 	if (d.success) { showToast('✅ Восстановлено'); setTimeout(() => location.reload(), 1200); }
 }
 
@@ -1753,7 +2307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 </html>
 """
 
-LANDING_HTML = """
+LANDING_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1790,8 +2344,7 @@ LANDING_HTML = """
 			display: flex; align-items: center; justify-content: center; font-size: 32px;
 			box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
 		}
-		h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; word-break: break-all; }
-		p { font-size: 13.5px; color: #94a3b8; margin-bottom: 24px; }
+		h1 { font-size: 22px; font-weight: 700; margin-bottom: 18px; }
 		.qr-box {
 			background: #fff; padding: 16px; border-radius: 20px; display: inline-block;
 			margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -1803,12 +2356,10 @@ LANDING_HTML = """
 			text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 			margin-bottom: 10px;
 		}
-		.btn:hover { opacity: .95; transform: translateY(-1px); }
 		.btn-outline {
 			background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);
 			box-shadow: none; color: #f8fafc;
 		}
-		.notice { font-size: 12px; color: #94a3b8; margin-top: 14px; line-height: 1.4; }
 	</style>
 </head>
 <body>
@@ -1816,19 +2367,12 @@ LANDING_HTML = """
 <div class="card">
 	<div class="logo">🛡️</div>
 	<h1>{client_name}</h1>
-	<p>Скачайте файл профиля и откройте его в приложении OpenVPN Connect</p>
 	<div class="qr-box"><canvas id="qrCanvas"></canvas></div>
 	<a href="/d/{token}/raw" class="btn">⬇️ Скачать .ovpn профиль</a>
-	<div id="importBtnBox"></div>
-	<div class="notice">
-		Подсказка: на телефоне нажмите <b>«Скачать .ovpn»</b> и выберите <i>«Открыть с помощью OpenVPN»</i>.
-	</div>
+	<a href="openvpn://import-profile/{raw_url}" class="btn btn-outline">⚡ Connect OpenVPN</a>
 </div>
 <script>
-	new QRious({ element: document.getElementById('qrCanvas'), value: window.location.href, size: 200, level: 'M' });
-	if (window.location.protocol === 'https:') {
-		document.getElementById('importBtnBox').innerHTML = '<a href="openvpn://import-profile/{raw_url}" class="btn btn-outline">⚡ Авто-импорт в OpenVPN</a>';
-	}
+	new QRious({ element: document.getElementById('qrCanvas'), value: "{raw_url}", size: 200, level: 'M' });
 </script>
 </body>
 </html>

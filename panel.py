@@ -2,15 +2,19 @@ import asyncio
 import base64
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 import re
 import secrets
 import shutil
+import socket
 import subprocess
 import tarfile
 import tempfile
 import time
+import urllib.request
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -24,7 +28,9 @@ from database import (
     CCD_DIR,
     DB_PATH,
     DNSMASQ_ADBLOCK_CONF,
+    DOMAIN,
     INLINE_DIR,
+    OVPN_PORT,
     PANEL_PORT,
     SERVER_CONF_PATH,
     get_admin_login,
@@ -32,9 +38,13 @@ from database import (
     get_all_client_meta,
     get_all_settings,
     get_current_domain,
+    get_current_mgmt,
     get_current_port,
     get_current_proto,
     get_db,
+    get_domain_retention,
+    get_ovpn_subnet_cidr,
+    get_session_max_age,
     get_setting,
     hash_password,
     init_db,
@@ -46,22 +56,26 @@ from database import (
 )
 from openvpn_manager import (
     apply_bidirectional_speed_limits_sync,
-    check_expired_clients_sync,
     client_exists,
     create_client_sync,
     delete_client_completely_sync,
+    domain_tracker,
+    flush_traffic_deltas_to_db,
     generate_config,
     get_pki_clients_fast,
     get_server_status,
     invalidate_pki_cache,
     invalidate_server_status_cache,
     parse_existing_server_conf_into_db,
+    reload_sniffer_ignored_cache,
     revoke_client_sync,
     speed_monitor,
     sync_openvpn_server_conf_from_settings,
+    unrevoke_client_sync,
 )
 from network_manager import (
     apply_adblock_state_sync,
+    apply_quic_block_sync,
     apply_routing_mode_sync,
     apply_torrent_block_sync,
     ensure_dnsmasq_installed_sync,
@@ -79,39 +93,41 @@ from ui_templates import LANDING_HTML, LOGIN_HTML, MAIN_HTML
 SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_hex(32)
 SESSION_SECRET = os.getenv("SESSION_SECRET") or secrets.token_hex(32)
 SESSION_COOKIE = "openvpn_session"
-SESSION_MAX_AGE = 86400
 
 
 async def live_speed_worker() -> None:
-    tick_counter = 0
+    db_counter = 0
     while True:
         try:
             await speed_monitor.update_tick()
-            tick_counter += 1
-            if tick_counter >= 30:
-                await asyncio.to_thread(check_expired_clients_sync)
-                tick_counter = 0
+            db_counter += 1
+            if db_counter >= 15:
+                await asyncio.to_thread(flush_traffic_deltas_to_db)
+                db_counter = 0
         except Exception:
             pass
         await asyncio.sleep(1.0)
 
 
-from contextlib import asynccontextmanager
-
-
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     init_db()
+    reload_sniffer_ignored_cache()
     CCD_DIR.mkdir(parents=True, exist_ok=True)
     await asyncio.to_thread(ensure_system_configs)
     task_speed = asyncio.create_task(live_speed_worker())
+    from openvpn_manager import domain_sniffer_worker
+
+    task_sniffer = asyncio.create_task(domain_sniffer_worker())
     yield
     task_speed.cancel()
+    task_sniffer.cancel()
+    await asyncio.to_thread(flush_traffic_deltas_to_db)
 
 
 app = FastAPI(
-    title="OpenVPN Panel",
-    version="1.1.0",
+    title="OpenVPN Control Center",
+    version="9.0.0",
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -124,7 +140,11 @@ def verify_login(username: str, password: str) -> bool:
         username.encode("utf-8"), get_admin_login().encode("utf-8")
     ):
         return False
-    return verify_password(password, get_admin_password_hash())
+    stored = get_admin_password_hash()
+    if stored.startswith("scrypt$"):
+        return verify_password(password, stored)
+    pwd_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(pwd_hash, stored)
 
 
 def create_session() -> str:
@@ -148,7 +168,7 @@ def verify_session(session: Optional[str]) -> bool:
         if not hmac.compare_digest(sig, expected):
             return False
         _, ts_str = payload.split(":", 1)
-        if time.time() - int(ts_str) > SESSION_MAX_AGE:
+        if time.time() - int(ts_str) > get_session_max_age():
             return False
         return True
     except Exception:
@@ -313,10 +333,12 @@ async def api_adblock_add_list(request: Request):
         return {"success": False, "message": "Invalid JSON"}
 
     if not url.startswith(("http://", "https://")):
-        return {"success": False, "message": "Invalid URL"}
+        return {
+            "success": False,
+            "message": "URL должен начинаться с http:// или https://",
+        }
 
     def _download_and_store():
-        task_tracker.update("adblock_list", 15, "Проверка dnsmasq...")
         ok_inst, msg_inst = ensure_dnsmasq_installed_sync(
             lambda p, m: task_tracker.update("adblock_list", p, m)
         )
@@ -353,7 +375,7 @@ async def api_adblock_add_list(request: Request):
         rebuild_dnsmasq_adblock_conf_sync(
             lambda p, m: task_tracker.update("adblock_list", p, m)
         )
-        return True, f"Добавлено доменов: {len(domains)}"
+        return True, f"Список загружен ({len(domains)} правил)"
 
     asyncio.create_task(
         asyncio.to_thread(
@@ -392,7 +414,7 @@ async def api_adblock_add_domain(request: Request):
 
     parsed = parse_adlist_content(raw_dom)
     if not parsed:
-        return {"success": False, "message": "Invalid domain"}
+        return {"success": False, "message": "Некорректный формат домена"}
     domain = parsed[0]
 
     def _add_dom():
@@ -407,7 +429,10 @@ async def api_adblock_add_domain(request: Request):
                 (domain, list_type, int(time.time())),
             )
         rebuild_dnsmasq_adblock_conf_sync()
-        return True, "OK"
+        return (
+            True,
+            f"Домен {domain} добавлен в {'белый' if list_type == 'white' else 'черный'} список",
+        )
 
     ok, msg = await asyncio.to_thread(_add_dom)
     return {"success": ok, "message": msg}
@@ -426,13 +451,67 @@ async def api_adblock_delete_domain(dom_id: int):
 
 
 # ============================================================
-# SYSTEM, SETTINGS & SPEED LIMITS API
+# SYSTEM, INFOGRAPHICS, SETTINGS & SPEED LIMITS API
 # ============================================================
 
 @app.get("/api/system/stats")
 async def api_system_stats():
     stats = await asyncio.to_thread(get_system_stats)
     return {"success": True, "stats": stats}
+
+
+@app.get("/api/infographics")
+async def api_infographics():
+    def _calc():
+        pki = get_pki_clients_fast()
+        valid_c = sum(1 for v in pki.values() if v["status"] == "valid")
+        revoked_c = sum(1 for v in pki.values() if v["status"] == "revoked")
+        online_c = len(speed_monitor.online_clients)
+
+        with get_db() as conn:
+            paused_c = conn.execute(
+                "SELECT COUNT(*) as c FROM client_meta WHERE is_paused=1"
+            ).fetchone()["c"]
+            top_clients_rows = conn.execute(
+                "SELECT client_name, (bytes_recv + bytes_sent) as total, bytes_recv, bytes_sent "
+                "FROM traffic ORDER BY total DESC LIMIT 10"
+            ).fetchall()
+            tot_row = conn.execute(
+                "SELECT SUM(bytes_recv) as r, SUM(bytes_sent) as s FROM traffic"
+            ).fetchone()
+            cutoff = int(time.time()) - get_domain_retention()
+            top_domains_rows = conn.execute(
+                "SELECT domain, COUNT(*) as cnt FROM domain_logs WHERE visited_at >= ? "
+                "GROUP BY domain ORDER BY cnt DESC LIMIT 10",
+                (cutoff,),
+            ).fetchall()
+
+        offline_c = max(0, valid_c - online_c - paused_c)
+        return {
+            "status_counts": {
+                "online": online_c,
+                "offline": offline_c,
+                "paused": paused_c,
+                "revoked": revoked_c,
+            },
+            "total_recv": tot_row["r"] or 0,
+            "total_sent": tot_row["s"] or 0,
+            "top_clients": [
+                {
+                    "name": r["client_name"],
+                    "total": r["total"],
+                    "recv": r["bytes_recv"],
+                    "sent": r["bytes_sent"],
+                }
+                for r in top_clients_rows
+            ],
+            "top_domains": [
+                {"domain": r["domain"], "count": r["cnt"]} for r in top_domains_rows
+            ],
+        }
+
+    data = await asyncio.to_thread(_calc)
+    return {"success": True, "data": data}
 
 
 @app.get("/api/settings")
@@ -460,18 +539,36 @@ async def api_update_settings(request: Request):
                 return {"success": False, "message": "Password too short"}
             updates["admin_password_hash"] = hash_password(new_pass)
 
-        if "panel_port" in data and str(data["panel_port"]).strip() != "":
-            val = int(data["panel_port"])
-            if 1 <= val <= 65535:
-                updates["panel_port"] = str(val)
+        int_fields = {
+            "session_max_age": (300, 31536000),
+            "panel_port": (1, 65535),
+            "mgmt_port": (1, 65535),
+            "domain_retention": (60, 2592000),
+        }
+        for k, (mn, mx) in int_fields.items():
+            if k in data and str(data[k]).strip() != "":
+                val = int(data[k])
+                if mn <= val <= mx:
+                    updates[k] = str(val)
 
-        if "ovpn_domain" in data:
-            updates["ovpn_domain"] = str(data["ovpn_domain"]).strip()
+        str_fields = [
+            "tun_iface",
+            "mgmt_host",
+            "ovpn_domain",
+        ]
+        for k in str_fields:
+            if k in data:
+                updates[k] = str(data[k]).strip()
 
         bool_fields = [
+            "enable_sniffer",
             "enable_speed_monitor",
+            "enable_traffic_stats",
+            "enable_infographics",
             "enable_hardware_bar",
             "torrent_block",
+            "quic_block",
+            "enable_ip_history",
         ]
         for k in bool_fields:
             if k in data:
@@ -479,6 +576,8 @@ async def api_update_settings(request: Request):
 
         await asyncio.to_thread(set_settings_bulk, updates)
 
+        if "quic_block" in updates:
+            await asyncio.to_thread(apply_quic_block_sync, updates["quic_block"] == "1")
         if "torrent_block" in updates:
             await asyncio.to_thread(
                 apply_torrent_block_sync, updates["torrent_block"] == "1"
@@ -562,8 +661,30 @@ async def api_service_control(action: str):
     return {"success": ok, "message": msg}
 
 
+@app.post("/api/database/action")
+async def api_database_action(request: Request):
+    try:
+        data = await request.json()
+        act = data.get("action", "")
+        with get_db() as conn:
+            if act == "clear_domains":
+                conn.execute("DELETE FROM domain_logs")
+            elif act == "clear_traffic":
+                speed_monitor.pending_deltas.clear()
+                conn.execute("DELETE FROM traffic")
+            elif act == "clear_ip_history":
+                conn.execute("DELETE FROM client_connections")
+            elif act == "vacuum":
+                conn.execute("VACUUM")
+            else:
+                return {"success": False, "message": "Unknown action"}
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
 # ============================================================
-# CLIENTS API
+# CLIENTS, DOMAINS & IPS API
 # ============================================================
 
 @app.get("/api/clients/speeds")
@@ -584,13 +705,98 @@ async def api_clients_speeds_history(seconds: int = Query(30, ge=10, le=300)):
     }
 
 
+@app.get("/api/clients/{name}/domains")
+async def api_get_client_domains(
+    name: str, q: str = Query(""), limit: int = Query(300, ge=10, le=1000)
+):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+        return {"success": False, "domains": []}
+    domains = await asyncio.to_thread(
+        domain_tracker.get_client_domains, name, q.strip(), limit
+    )
+    top_domains = await asyncio.to_thread(
+        domain_tracker.get_client_top_domains, name, 10
+    )
+    return {
+        "success": True,
+        "client": name,
+        "domains": domains,
+        "top_domains": top_domains,
+    }
+
+
+@app.delete("/api/clients/{name}/domains")
+async def api_clear_client_domains(name: str):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+        return {"success": False}
+    await asyncio.to_thread(domain_tracker.clear_client_domains, name)
+    return {"success": True}
+
+
+@app.get("/api/clients/{name}/ips")
+async def api_get_client_ips(name: str, limit: int = Query(100, ge=10, le=1000)):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+        return {"success": False, "ips": []}
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                "SELECT real_ip, MAX(virt_ip) as virt_ip, MAX(connected_at) as connected_at, "
+                "MAX(disconnected_at) as disconnected_at, COUNT(*) as repeat_count "
+                "FROM client_connections "
+                "WHERE client_name = ? "
+                "GROUP BY real_ip "
+                "ORDER BY connected_at DESC LIMIT ?",
+                (name, limit),
+            ).fetchall()
+        return {
+            "success": True,
+            "client": name,
+            "ips": [
+                {
+                    "real_ip": r["real_ip"],
+                    "virt_ip": r["virt_ip"] or "—",
+                    "connected_at": r["connected_at"],
+                    "disconnected_at": r["disconnected_at"],
+                    "repeat_count": r["repeat_count"],
+                    "connected_fmt": datetime.fromtimestamp(r["connected_at"]).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                    "disconnected_fmt": (
+                        datetime.fromtimestamp(r["disconnected_at"]).strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        )
+                        if r["disconnected_at"]
+                        else "—"
+                    ),
+                }
+                for r in rows
+            ],
+        }
+    except Exception:
+        return {"success": True, "client": name, "ips": []}
+
+
 @app.get("/api/clients")
 async def api_clients():
     pki_clients = await asyncio.to_thread(get_pki_clients_fast)
     meta_data = await asyncio.to_thread(get_all_client_meta)
+    traffic_data = {}
+
+    try:
+        with get_db() as conn:
+            for row in conn.execute(
+                "SELECT client_name, bytes_recv, bytes_sent FROM traffic"
+            ):
+                traffic_data[row["client_name"]] = {
+                    "recv": row["bytes_recv"],
+                    "sent": row["bytes_sent"],
+                }
+    except Exception:
+        pass
 
     active_sessions = speed_monitor.active_sessions
     current_speeds = speed_monitor.current_speeds
+    pending = speed_monitor.pending_deltas
     clients = []
 
     for name in sorted(pki_clients.keys()):
@@ -599,6 +805,7 @@ async def api_clients():
             name,
             {
                 "note": "",
+                "limit": 0,
                 "expires": 0,
                 "is_paused": 0,
                 "speed_limit_kbps": 0,
@@ -612,6 +819,8 @@ async def api_clients():
         is_online = name in active_sessions and not is_paused
         sess = active_sessions.get(name, {})
         spd = current_speeds.get(name, {})
+        t_data = traffic_data.get(name, {"recv": 0, "sent": 0})
+        pend = pending.get(name, [0, 0])
 
         clients.append(
             {
@@ -620,6 +829,7 @@ async def api_clients():
                 "is_online": is_online,
                 "is_paused": is_paused,
                 "note": m_info["note"],
+                "traffic_limit": m_info["limit"],
                 "expires_at": m_info["expires"],
                 "speed_limit_kbps": m_info["speed_limit_kbps"],
                 "last_connected_at": m_info["last_connected_at"],
@@ -641,6 +851,8 @@ async def api_clients():
                     spd.get("down_fmt", "0 B/s") if is_online else "0 B/s"
                 ),
                 "speed_up_fmt": spd.get("up_fmt", "0 B/s") if is_online else "0 B/s",
+                "traffic_recv": t_data["recv"] + pend[0],
+                "traffic_sent": t_data["sent"] + pend[1],
                 "created": meta.get("created", "—"),
                 "expires": meta.get("expires", "—"),
                 "share_token": (
@@ -662,9 +874,10 @@ async def api_create_client(request: Request):
 
     name = str(data.get("name", "")).strip()
     note = str(data.get("note", "")).strip()
+    limit_gb = float(data.get("limit_gb", 0) or 0)
     ttl_days = int(data.get("ttl_days", 0) or 0)
 
-    ok, msg = await asyncio.to_thread(create_client_sync, name, note, ttl_days)
+    ok, msg = await asyncio.to_thread(create_client_sync, name, note, limit_gb, ttl_days)
     return {"success": ok, "message": msg}
 
 
@@ -700,6 +913,21 @@ async def api_kick_client(name: str):
     return {"success": ok}
 
 
+@app.delete("/api/clients/{name}/traffic")
+async def api_reset_client_traffic(name: str):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+        return {"success": False}
+    speed_monitor.pending_deltas.pop(name, None)
+    with get_db() as conn:
+        conn.execute("DELETE FROM traffic WHERE client_name=?", (name,))
+        conn.execute(
+            "UPDATE client_meta SET is_paused = 0 WHERE client_name = ? AND traffic_limit_bytes > 0",
+            (name,),
+        )
+    (CCD_DIR / name).unlink(missing_ok=True)
+    return {"success": True}
+
+
 @app.delete("/api/clients/{name}")
 async def api_revoke_or_delete_client(name: str, permanent: bool = Query(False)):
     if not client_exists(name):
@@ -713,6 +941,12 @@ async def api_revoke_or_delete_client(name: str, permanent: bool = Query(False))
     ok, msg = await asyncio.to_thread(revoke_client_sync, name)
     if ok:
         await speed_monitor.kick_client(name)
+    return {"success": ok, "message": msg}
+
+
+@app.post("/api/clients/{name}/restore")
+async def api_restore_client(name: str):
+    ok, msg = await asyncio.to_thread(unrevoke_client_sync, name)
     return {"success": ok, "message": msg}
 
 
@@ -772,7 +1006,7 @@ async def public_download_config_raw(token: str):
 
 
 # ============================================================
-# CONFIG, BACKUP & ROUTING API
+# CONFIG, BACKUP, ROUTING & DOMAINS API
 # ============================================================
 
 @app.get("/api/config")
@@ -901,9 +1135,14 @@ async def api_restore(file: UploadFile = File(...)):
                         Path("/etc/dnsmasq.d"),
                         dirs_exist_ok=True,
                     )
-                if (src_root / "panel.db").exists():
+                db_src = (
+                    src_root / "panel.db"
+                    if (src_root / "panel.db").exists()
+                    else (src_root / "traffic.db")
+                )
+                if db_src.exists():
                     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(src_root / "panel.db", DB_PATH)
+                    shutil.copy2(db_src, DB_PATH)
                 if (src_root / ".env").exists():
                     shutil.copy2(src_root / ".env", env_target)
                     os.chmod(env_target, 0o600)
@@ -1010,8 +1249,6 @@ async def api_routing_settings(request: Request):
 
 @app.post("/api/routing/update_ips")
 async def api_routing_update_ips():
-    import urllib.request
-
     def _download():
         url = (
             get_setting("cidr_url")
@@ -1059,9 +1296,6 @@ async def api_routing_setup(request: Request):
 
 @app.post("/api/routing/resolve-link")
 async def api_resolve_link(request: Request):
-    import socket
-    import urllib.request
-
     try:
         data = await request.json()
         url = data.get("url", "").strip()
@@ -1149,8 +1383,73 @@ async def api_delete_split_link(link_id: int):
         return {"success": False, "message": str(e)}
 
 
+@app.get("/api/domains/global")
+async def api_get_global_domains(q: str = Query(""), limit: int = Query(300, ge=10, le=2000)):
+    domains = await asyncio.to_thread(
+        domain_tracker.get_all_global_domains, q.strip(), limit
+    )
+    return {"success": True, "domains": domains}
+
+
+@app.get("/api/sniffer/ignored")
+async def api_get_sniffer_ignored():
+    def _get():
+        with get_db() as conn:
+            return [
+                dict(r)
+                for r in conn.execute(
+                    "SELECT id, domain, created_at FROM sniffer_ignored ORDER BY id DESC"
+                ).fetchall()
+            ]
+
+    data = await asyncio.to_thread(_get)
+    return {"success": True, "ignored": data}
+
+
+@app.post("/api/sniffer/ignored")
+async def api_add_sniffer_ignored(request: Request):
+    try:
+        body = await request.json()
+        raw_dom = str(body.get("domain", "")).strip().lower()
+        raw_dom = re.sub(r"^https?://", "", raw_dom).split("/")[0].strip()
+        if raw_dom.startswith("www."):
+            raw_dom = raw_dom[4:]
+        if not raw_dom or "." not in raw_dom:
+            return {"success": False, "message": "Некорректный домен"}
+
+        def _add():
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT OR IGNORE INTO sniffer_ignored (domain, created_at) VALUES (?, ?)",
+                    (raw_dom, int(time.time())),
+                )
+                conn.execute(
+                    "DELETE FROM domain_logs WHERE domain = ? OR domain LIKE ?",
+                    (raw_dom, f"%.{raw_dom}"),
+                )
+            reload_sniffer_ignored_cache()
+            return True
+
+        await asyncio.to_thread(_add)
+        return {"success": True, "domain": raw_dom}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@app.delete("/api/sniffer/ignored/{item_id}")
+async def api_del_sniffer_ignored(item_id: int):
+    def _del():
+        with get_db() as conn:
+            conn.execute("DELETE FROM sniffer_ignored WHERE id = ?", (item_id,))
+        reload_sniffer_ignored_cache()
+        return True
+
+    await asyncio.to_thread(_del)
+    return {"success": True}
+
+
 # ============================================================
-# HTML PAGES
+# LOGIN, LOGOUT & INDEX
 # ============================================================
 
 @app.get("/login", response_class=HTMLResponse)
@@ -1169,7 +1468,7 @@ async def login(request: Request):
     except Exception:
         return HTMLResponse(
             LOGIN_HTML.replace(
-                "{{ERROR}}", '<div class="error-box">Form error</div>'
+                "{{ERROR}}", '<div class="error-box">Ошибка формы / Form error</div>'
             ),
             status_code=400,
         )
@@ -1178,7 +1477,7 @@ async def login(request: Request):
         return HTMLResponse(
             LOGIN_HTML.replace(
                 "{{ERROR}}",
-                '<div class="error-box">Invalid credentials</div>',
+                '<div class="error-box">Неверные данные / Invalid credentials</div>',
             ),
             status_code=401,
         )
@@ -1189,7 +1488,7 @@ async def login(request: Request):
     response.set_cookie(
         key=SESSION_COOKIE,
         value=session,
-        max_age=SESSION_MAX_AGE,
+        max_age=get_session_max_age(),
         httponly=True,
         secure=is_secure,
         samesite="lax",

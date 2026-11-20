@@ -6,7 +6,7 @@ import secrets
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 DOMAIN = os.getenv("OVPN_DOMAIN", "127.0.0.1")
 OVPN_PORT = int(os.getenv("OVPN_PORT", "1984"))
@@ -14,6 +14,7 @@ PROTOCOL = os.getenv("OVPN_PROTO", "udp")
 PANEL_PORT = int(os.getenv("PANEL_PORT", "8080"))
 TUN_IFACE = os.getenv("OVPN_TUN_IFACE", "tun0")
 IFB_IFACE = os.getenv("OVPN_IFB_IFACE", "ifb0")
+DOMAIN_RETENTION_SECONDS = 86400
 
 MGMT_HOST = os.getenv("OVPN_MGMT_HOST", "127.0.0.1")
 MGMT_PORT = int(os.getenv("OVPN_MGMT_PORT", "7505"))
@@ -51,14 +52,28 @@ def get_db() -> sqlite3.Connection:
     return conn
 
 
-def _ensure_column(conn: sqlite3.Connection, table: str, column: str, col_def: str) -> None:
-    cols = [row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+def _ensure_column(
+    conn: sqlite3.Connection, table: str, column: str, col_def: str
+) -> None:
+    cols = [
+        row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+    ]
     if column not in cols:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}")
 
 
 def init_db() -> None:
     with get_db() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS traffic (
+                client_name TEXT PRIMARY KEY,
+                bytes_recv INTEGER DEFAULT 0,
+                bytes_sent INTEGER DEFAULT 0,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS settings (
@@ -69,9 +84,20 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS domain_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                visited_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS client_meta (
                 client_name TEXT PRIMARY KEY,
                 note TEXT DEFAULT '',
+                traffic_limit_bytes INTEGER DEFAULT 0,
                 expires_at INTEGER DEFAULT 0,
                 is_paused INTEGER DEFAULT 0,
                 speed_limit_kbps INTEGER DEFAULT 0,
@@ -90,6 +116,18 @@ def init_db() -> None:
                 resolved_ip TEXT DEFAULT '',
                 route_via TEXT DEFAULT 'split',
                 created_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS client_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_name TEXT NOT NULL,
+                real_ip TEXT NOT NULL,
+                virt_ip TEXT,
+                connected_at INTEGER NOT NULL,
+                disconnected_at INTEGER
             )
             """
         )
@@ -114,8 +152,27 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sniffer_ignored (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                domain TEXT NOT NULL UNIQUE,
+                created_at INTEGER NOT NULL
+            )
+            """
+        )
 
-        # Мягкая миграция для уже существующих баз
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_domain_client_time ON domain_logs(client_name, visited_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_domain_visited_at ON domain_logs(visited_at)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_conn_client ON client_connections(client_name, connected_at DESC)"
+        )
+
+        # Мягкая миграция колонок при обновлении существующей БД
         _ensure_column(conn, "client_meta", "speed_limit_kbps", "INTEGER DEFAULT 0")
         _ensure_column(conn, "client_meta", "last_connected_at", "INTEGER DEFAULT 0")
         _ensure_column(conn, "client_meta", "last_disconnected_at", "INTEGER DEFAULT 0")
@@ -126,12 +183,16 @@ def init_db() -> None:
             "admin_login": os.getenv("ADMIN_LOGIN", "admin"),
             "admin_password_hash": os.getenv(
                 "ADMIN_PASSWORD_HASH",
-                hashlib.sha256("admin".encode("utf-8")).hexdigest(),
+                hashlib.sha256(secrets.token_urlsafe(16).encode("utf-8")).hexdigest(),
             ),
+            "session_max_age": "86400",
             "ovpn_domain": os.getenv("OVPN_DOMAIN", DOMAIN),
             "ovpn_port": str(OVPN_PORT),
             "ovpn_proto": PROTOCOL,
             "panel_port": str(PANEL_PORT),
+            "tun_iface": TUN_IFACE,
+            "mgmt_host": MGMT_HOST,
+            "mgmt_port": str(MGMT_PORT),
             "ovpn_dns1": "1.1.1.1",
             "ovpn_dns2": "8.8.8.8",
             "ovpn_cipher": "AES-256-GCM",
@@ -143,24 +204,41 @@ def init_db() -> None:
             "ovpn_client_to_client": "0",
             "ovpn_redirect_gw": "1",
             "ovpn_verb": "3",
+            "enable_sniffer": "1",
             "enable_speed_monitor": "1",
+            "enable_traffic_stats": "1",
+            "enable_infographics": "1",
             "enable_hardware_bar": "1",
+            "enable_ip_history": "1",
+            "domain_retention": str(DOMAIN_RETENTION_SECONDS),
             "cidr_url": "https://plitw.github.io/ros-country-ips/cidr_lists/ru_ipv4",
             "routing_mode": "split",
             "custom_cidrs": "",
             "torrent_block": "0",
+            "quic_block": "1",
             "split_link_ips": "",
             "adblock_enabled": "0",
             "adblock_dns_ip": ADBLOCK_DNS_IP,
-            # Лимиты скорости (в Кбит/с; 0 = без ограничения)
             "global_speed_limit_kbps": "0",
-            "speed_limit_mode": "none",  # none | global | selected | per_client
-            "selected_limit_clients": "[]",  # JSON-список имен клиентов
+            "speed_limit_mode": "none",
+            "selected_limit_clients": "[]",
         }
         for k, v in default_settings.items():
             conn.execute(
                 "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v)
             )
+
+        retention = int(default_settings["domain_retention"])
+        try:
+            row = conn.execute(
+                "SELECT value FROM settings WHERE key='domain_retention'"
+            ).fetchone()
+            if row and row["value"]:
+                retention = int(row["value"])
+        except Exception:
+            pass
+        cutoff = int(time.time()) - retention
+        conn.execute("DELETE FROM domain_logs WHERE visited_at < ?", (cutoff,))
 
 
 def get_setting(key: str, default: str = "") -> str:
@@ -228,8 +306,8 @@ def verify_password(password: str, stored_hash: str) -> bool:
             return hmac.compare_digest(derived.hex(), hash_hex)
         except Exception:
             return False
-    legacy = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return hmac.compare_digest(legacy, stored_hash)
+    legacy_sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(legacy_sha, stored_hash)
 
 
 def get_admin_login() -> str:
@@ -237,17 +315,14 @@ def get_admin_login() -> str:
 
 
 def get_admin_password_hash() -> str:
-    return get_setting("admin_password_hash", hash_password("admin"))
+    return get_setting("admin_password_hash", "")
 
 
-def get_ovpn_subnet_cidr() -> str:
-    raw = get_setting("ovpn_subnet", "10.8.0.0 255.255.255.0").strip().split()
-    if len(raw) == 2:
-        try:
-            return str(ipaddress.IPv4Network(f"{raw[0]}/{raw[1]}", strict=False))
-        except Exception:
-            pass
-    return "10.8.0.0/24"
+def get_session_max_age() -> int:
+    try:
+        return int(get_setting("session_max_age", "86400"))
+    except Exception:
+        return 86400
 
 
 def get_current_domain() -> str:
@@ -265,13 +340,45 @@ def get_current_proto() -> str:
     return get_setting("ovpn_proto", PROTOCOL)
 
 
+def get_current_tun_iface() -> str:
+    return get_setting("tun_iface", TUN_IFACE)
+
+
+def get_current_mgmt() -> Tuple[str, int]:
+    h = get_setting("mgmt_host", MGMT_HOST)
+    try:
+        p = int(get_setting("mgmt_port", str(MGMT_PORT)))
+    except Exception:
+        p = MGMT_PORT
+    return h, p
+
+
+def get_ovpn_subnet_cidr() -> str:
+    raw = get_setting("ovpn_subnet", "10.8.0.0 255.255.255.0").strip().split()
+    if len(raw) == 2:
+        try:
+            return str(ipaddress.IPv4Network(f"{raw[0]}/{raw[1]}", strict=False))
+        except Exception:
+            pass
+    return "10.8.0.0/24"
+
+
+def get_domain_retention() -> int:
+    try:
+        return max(
+            60, int(get_setting("domain_retention", str(DOMAIN_RETENTION_SECONDS)))
+        )
+    except Exception:
+        return DOMAIN_RETENTION_SECONDS
+
+
 def get_all_client_meta() -> Dict[str, Dict[str, Any]]:
     result: Dict[str, Dict[str, Any]] = {}
     try:
         with get_db() as conn:
             rows = conn.execute(
                 """
-                SELECT client_name, note, expires_at, is_paused,
+                SELECT client_name, note, traffic_limit_bytes, expires_at, is_paused,
                        speed_limit_kbps, last_connected_at, last_disconnected_at,
                        last_real_ip, last_virt_ip
                 FROM client_meta
@@ -280,6 +387,7 @@ def get_all_client_meta() -> Dict[str, Dict[str, Any]]:
             for r in rows:
                 result[r["client_name"]] = {
                     "note": r["note"] or "",
+                    "limit": int(r["traffic_limit_bytes"] or 0),
                     "expires": int(r["expires_at"] or 0),
                     "is_paused": int(r["is_paused"] or 0),
                     "speed_limit_kbps": int(r["speed_limit_kbps"] or 0),
@@ -296,12 +404,18 @@ def get_all_client_meta() -> Dict[str, Dict[str, Any]]:
 def upsert_client_meta(
     client_name: str,
     note: Optional[str] = None,
+    traffic_limit_bytes: Optional[int] = None,
     expires_at: Optional[int] = None,
     is_paused: Optional[int] = None,
     speed_limit_kbps: Optional[int] = None,
 ) -> None:
     cur = get_all_client_meta().get(client_name, {})
     n_val = note if note is not None else cur.get("note", "")
+    l_val = (
+        traffic_limit_bytes
+        if traffic_limit_bytes is not None
+        else cur.get("limit", 0)
+    )
     e_val = expires_at if expires_at is not None else cur.get("expires", 0)
     p_val = is_paused if is_paused is not None else cur.get("is_paused", 0)
     s_val = (
@@ -313,15 +427,16 @@ def upsert_client_meta(
         conn.execute(
             """
             INSERT INTO client_meta (
-                client_name, note, expires_at, is_paused, speed_limit_kbps
-            ) VALUES (?, ?, ?, ?, ?)
+                client_name, note, traffic_limit_bytes, expires_at, is_paused, speed_limit_kbps
+            ) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(client_name) DO UPDATE SET
                 note=excluded.note,
+                traffic_limit_bytes=excluded.traffic_limit_bytes,
                 expires_at=excluded.expires_at,
                 is_paused=excluded.is_paused,
                 speed_limit_kbps=excluded.speed_limit_kbps
             """,
-            (client_name, n_val, int(e_val), int(p_val), int(s_val)),
+            (client_name, n_val, int(l_val), int(e_val), int(p_val), int(s_val)),
         )
 
 
@@ -342,8 +457,9 @@ def set_bulk_client_speed_limits(limits_map: Dict[str, int]) -> None:
 def record_connection_events(
     connected_clients: List[Dict[str, Any]],
     disconnected_names: List[str],
+    track_ip_history: bool = True,
 ) -> None:
-    now_ts = int(time.time())
+    now = int(time.time())
     if not connected_clients and not disconnected_names:
         return
     try:
@@ -362,8 +478,13 @@ def record_connection_events(
                         last_real_ip=CASE WHEN excluded.last_real_ip != '' THEN excluded.last_real_ip ELSE client_meta.last_real_ip END,
                         last_virt_ip=CASE WHEN excluded.last_virt_ip != '' AND excluded.last_virt_ip != '—' THEN excluded.last_virt_ip ELSE client_meta.last_virt_ip END
                     """,
-                    (name, now_ts, real_ip, virt_ip),
+                    (name, now, real_ip, virt_ip),
                 )
+                if track_ip_history:
+                    conn.execute(
+                        "INSERT INTO client_connections (client_name, real_ip, virt_ip, connected_at) VALUES (?, ?, ?, ?)",
+                        (name, real_ip or "—", virt_ip or "—", now),
+                    )
             for name in disconnected_names:
                 conn.execute(
                     """
@@ -372,7 +493,13 @@ def record_connection_events(
                     ON CONFLICT(client_name) DO UPDATE SET
                         last_disconnected_at=excluded.last_disconnected_at
                     """,
-                    (name, now_ts),
+                    (name, now),
                 )
+                if track_ip_history:
+                    conn.execute(
+                        "UPDATE client_connections SET disconnected_at = ? "
+                        "WHERE client_name = ? AND disconnected_at IS NULL",
+                        (now, name),
+                    )
     except Exception:
         pass
