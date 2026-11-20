@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🛡️ OpenVPN Web UI Control Center
-**Современная, безопасная и легковесная веб-панель управления OpenVPN**
+**Современная, модульная и легковесная веб-панель управления OpenVPN**
 
 [![GitHub Stars](https://img.shields.io/github/stars/fsystem88/openvpn-webui?style=flat-square&logo=github)](https://github.com/fsystem88/openvpn-webui/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
@@ -19,12 +19,12 @@
 
 <div align="center">
 
-| 📌 [Возможности](#ru-features) | 🚀 [Установка](#ru-install) | 🛠️ [Управление](#ru-management) | 🔒 [Безопасность](#ru-security) | 📄 [Лицензия](#ru-license) |
-| :---: | :---: | :---: | :---: | :---: |
+| 📌 [Возможности](#ru-features) | 🧩 [Архитектура](#ru-arch) | 🚀 [Установка](#ru-install) | 🛠️ [Управление](#ru-management) | 🔒 [Безопасность](#ru-security) | 📄 [Лицензия](#ru-license) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
 
 </div>
 
-**OpenVPN Web UI** — это готовое open-source решение для управления сервером OpenVPN с веб-интерфейсом. Панель не требует тяжелых баз данных, работает без фоновых снифферов и перехвата пользовательского трафика, легковесна и развертывается одной командой.
+**OpenVPN Web UI** — это готовое open-source решение для управления сервером OpenVPN с современным веб-интерфейсом. Панель работает на SQLite, не требует тяжёлых СУБД, оптимизирована под слабые VPS (включая фоновый прогресс-бар для тяжёлых операций) и разворачивается одной командой.
 
 ---
 
@@ -32,42 +32,63 @@
 ### ✨ Возможности
 
 * **👥 Управление клиентами (Easy-RSA PKI):**
-  * Создание, удаление и отзыв сертификатов.
-  * Заморозка доступа (пауза) одним кликом без удаления ключей.
-  * Ограничение срока действия профиля по дням (TTL).
-  * Скачивание готового `.ovpn`, генерация QR-кода и защищенной ссылки для быстрой настройки на iOS, Android, Windows и macOS.
+  * Создание, отзыв, восстановление отозванных и полное удаление сертификатов.
+  * Заморозка доступа (пауза) одним кликом через `ccd` без перевыпуска ключей.
+  * Лимиты трафика (в ГБ) и срок действия профиля (TTL в днях) с автоматической паузой при достижении лимита.
+  * Заметки к клиентам, даты последнего подключения и отключения.
+  * Скачивание `.ovpn`, генерация QR-кода и защищённой ссылки (`/d/{token}`) для быстрого импорта на iOS, Android, Windows и macOS.
 
-* **📈 Мониторинг в реальном времени:**
-  * Живой график скорости (Download / Upload) напрямую из оперативной памяти сокета OpenVPN.
-  * Статус подключений (Онлайн / Офлайн / Пауза) и текущий выделенный IP.
-  * Системные метрики сервера: CPU, RAM, Disk, пинг до шлюза WireGuard.
+* **⚡ Двустороннее ограничение скорости (`tc` HTB + `ifb0`):**
+  * Шейпинг в обе стороны (Download и Upload) с режимами: без ограничений, для всех клиентов, для выбранных или индивидуально для каждого клиента.
+  * Быстрые пресеты скорости (`1`, `5`, `10`, `25`, `50 Мбит/с`) и автоматическое восстановление правил при пересоздании `tun0`.
 
-* **🔀 Сплит-туннель (WireGuard + ipset):**
-  * Избирательная маршрутизация трафика клиентов через удаленную точку выхода (Dual-VPN).
-  * Маршрутизация по географическим спискам подсетей (CIDR) или отдельным ссылкам/доменам.
-  * Автоматический резолвинг IP доменов с проверкой конфликтов подсетей.
+* **📈 Мониторинг в реальном времени (1s):**
+  * Ежесекундное обновление скорости (`↓ / ↑`), статуса и счётчика онлайна прямо в карточках клиентов и на живом графике через management-сокет OpenVPN.
+  * Системные метрики сервера: CPU, RAM, Disk и пинг до шлюза WireGuard.
 
-* **🛡️ Встроенный DNS AdBlock (dnsmasq):**
-  * Блокировка рекламы, трекеров и вредоносных хостов на уровне сервера.
-  * Импорт внешних списков (AdLists) по ссылкам и добавление собственных доменов в черный/белый списки.
+* **🌐 Аналитика, журнал сайтов и инфографика (отключаемые модули):**
+  * BPF-сниффер доменов (SNI / DNS / HTTP) с общим журналом, историей по каждому клиенту, Топ-10 и списком исключений (`*.domain.com`).
+  * История реальных IP-адресов подключений клиентов.
+  * Инфографика: Топ-10 клиентов по трафику, распределение статусов и Топ-10 посещаемых доменов.
+  * Любой модуль (сниффер, статистика трафика, история IP, инфографика, панель ресурсов) включается и отключается на лету в настройках.
 
-* **🚫 Блокировка BitTorrent:**
-  * Фильтрация торрент-протоколов на уровне iptables для предотвращения жалоб дата-центров.
+* **🔀 Сплит-туннель (WireGuard + `ipset`):**
+  * Избирательная маршрутизация трафика через удалённый сервер (Dual-VPN) с автонастройкой по SSH.
+  * Режимы маршрутизации: CIDR напрямую / в WG, весь трафик через WG, свои подсети и точечные правила по URL с проверкой конфликтов.
 
-* **📦 Резервное копирование и редактор конфигурации:**
-  * Полный бэкап и восстановление всех настроек, ключей и баз данных в архив `.tar.gz`.
-  * Встроенный редактор `server.conf` с возможностью быстрого применения и перезапуска службы.
-  * Переключение светлой и темной темы интерфейса.
+* **🛡️ DNS AdBlock (`dnsmasq`) и фильтрация трафика:**
+  * Серверная блокировка рекламы и трекеров: импорт внешних списков (AdLists) и собственные чёрный/белый списки доменов.
+  * Блокировка QUIC (UDP/443) для точного SNI и безопасная фильтрация BitTorrent через `iptables`.
+
+* **📦 Бэкап, конфигурация и UI:**
+  * Полный бэкап и восстановление (`.tar.gz`): OpenVPN PKI, WireGuard, `dnsmasq`, БД SQLite и `.env`.
+  * Прямой редактор `server.conf` с перезапуском службы, индикатор прогресса фоновых задач, светлая и тёмная темы, адаптация под мобильные устройства.
 
 ---
 
-<a id="ru-install"></a>
+<a id="ru-arch"></a>
+### 🧩 Структура проекта
+
+```text
+├── panel.py            # FastAPI приложение, роуты API, авторизация и сессии
+├── database.py         # SQLite (WAL), миграции, кэш настроек и метаданные клиентов
+├── openvpn_manager.py  # PKI/Easy-RSA, SpeedMonitor, BPF-сниффер, tc + ifb0 шейпинг
+├── network_manager.py  # WireGuard + ipset, DNS AdBlock (dnsmasq), метрики и трекер задач
+├── ui_templates.py     # Веб-интерфейс (HTML/CSS/JS), страница логина и публичный лендинг
+├── install.sh          # Интерактивный установщик, обновление, сброс пароля и бэкап
+└── requirements.txt    # Зависимости Python
+
+```
+
+---
+
 ### 🚀 Быстрая установка
 
 #### Требования к системе:
+
 * **ОС:** Ubuntu 22.04 / 24.04 LTS или Debian 11 / 12
-* **Права:** root (sudo)
-* Подходит как для чистого сервера, так и для сервера с уже установленным OpenVPN.
+* **Права:** root (`sudo`)
+* Подходит как для чистого сервера, так и для сервера с уже установленным OpenVPN (существующие конфиги и сертификаты сохраняются).
 
 #### Установка одной командой:
 
@@ -76,27 +97,28 @@ git clone https://github.com/fsystem88/openvpn-webui.git /opt/openvpn-webui
 cd /opt/openvpn-webui
 chmod +x install.sh
 sudo ./install.sh
+
 ```
 
 В процессе работы установщик:
-1. Автоматически определит параметры сети (NAT или публичный IP).
-2. Настроит OpenVPN сервер (или подключит существующий).
-3. Создаст виртуальное окружение Python, сгенерирует криптографические ключи и хэш пароля `scrypt`.
+
+1. Установит системные зависимости (`python3`, `iptables`, `ipset`, `iproute2`, `dnsmasq`).
+2. Настроит OpenVPN сервер (или бережно подключит существующий).
+3. Создаст виртуальное окружение Python, сгенерирует ключи сессий и хэш пароля `scrypt`.
 4. Зарегистрирует и запустит службу `openvpn-webui.service`.
 
 ---
 
-<a id="ru-management"></a>
 ### 🛠️ Меню управления
 
-Для изменения настроек, сброса пароля или деинсталляции просто запустите скрипт повторно:
+Для обновления, сброса пароля, бэкапа или удаления запустите скрипт повторно:
 
 ```bash
 cd /opt/openvpn-webui
 sudo ./install.sh
+
 ```
 
-Интерактивное меню предоставит доступ к следующим опциям:
 ```text
 1) Установить / Обновить Web UI
 2) Сбросить пароль администратора Web UI
@@ -104,31 +126,27 @@ sudo ./install.sh
 4) Удалить только Web-панель (оставить OpenVPN)
 5) Полное удаление (OpenVPN + Web-панель)
 6) Выход
+
 ```
 
-> **Безопасность:** перед выполнением удаления скрипт автоматически создает полный архив в каталоге `/root/openvpn_backup_*.tar.gz`.
+> **Безопасность:** перед обновлением или удалением скрипт автоматически создаёт резервный архив в `/root/openvpn_backup_*.tar.gz`.
 
 #### Управление через systemd:
 
 ```bash
-# Статус службы
 systemctl status openvpn-webui
-
-# Перезапуск панели
 systemctl restart openvpn-webui
-
-# Просмотр логов
 journalctl -u openvpn-webui -f
+
 ```
 
 ---
 
-<a id="ru-security"></a>
 ### 🔒 Безопасность
 
-* **Пароли:** Хранятся исключительно в виде `scrypt`-хэша с уникальной солью.
-* **Сессии:** Подписываются HMAC-SHA256 с динамически генерируемыми 256-битными ключами.
-* **HTTPS / Reverse Proxy:** Для работы в продакшене рекомендуется проксировать панель через Nginx или Caddy с SSL-сертификатом (Let's Encrypt):
+* **Пароли:** хранятся в виде солёного `scrypt`-хэша.
+* **Сессии:** подписываются HMAC-SHA256 с 256-битными ключами из `.env` (`chmod 600`).
+* **HTTPS / Reverse Proxy:** в продакшене рекомендуется проксировать панель через Nginx или Caddy с SSL:
 
 ```nginx
 server {
@@ -144,72 +162,96 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
 ```
 
 ---
 
-<a id="ru-license"></a>
 ### 📄 Лицензия
 
-Проект распространяется под лицензией [MIT](LICENSE).
+Проект распространяется под лицензией [MIT](https://www.google.com/search?q=LICENSE).
 
 ---
+
 ---
 
-<a id="en"></a>
 # 🇬🇧 English
 
-<div align="center">
+| 📌 [Features](https://www.google.com/search?q=%23en-features) | 🧩 [Architecture](https://www.google.com/search?q=%23en-arch) | 🚀 [Install](https://www.google.com/search?q=%23en-install) | 🛠️ [Management](https://www.google.com/search?q=%23en-management) | 🔒 [Security](https://www.google.com/search?q=%23en-security) | 📄 [License](https://www.google.com/search?q=%23en-license) |
+| --- | --- | --- | --- | --- | --- |
 
-| 📌 [Features](#en-features) | 🚀 [Install](#en-install) | 🛠️ [Management](#en-management) | 🔒 [Security](#en-security) | 📄 [License](#en-license) |
-| :---: | :---: | :---: | :---: | :---: |
 
-</div>
-
-**OpenVPN Web UI** is a complete, lightweight, and secure web control dashboard for managing OpenVPN servers. Built without heavy databases or invasive packet-sniffing tools, it operates purely via OpenVPN's memory management socket and deploys with a single command.
+**OpenVPN Web UI** is a modular, lightweight, and secure open-source web control dashboard for OpenVPN servers. Powered by SQLite and FastAPI, it is optimized for low-RAM VPS instances (including async background task progress tracking) and deploys with a single command.
 
 ---
 
-<a id="en-features"></a>
 ### ✨ Features
 
 * **👥 Client Management (Easy-RSA PKI):**
-  * Issue, delete, and revoke client certificates.
-  * Pause/resume client access instantly without invalidating certificates.
-  * Set expiration dates / TTL (Time to Live) in days.
-  * Download `.ovpn` profiles, scan QR codes, or copy secure import links for iOS, Android, Windows, and macOS.
+* Issue, revoke, restore (unrevoke), and permanently delete client certificates.
+* Instant pause/resume via `ccd` without invalidating keys.
+* Per-client traffic quotas (GB) and expiration TTL (days) with automatic pause on limit.
+* Client notes, last connected and last disconnected timestamps.
+* `.ovpn` download, QR code generation, and secure share links (`/d/{token}`) for iOS, Android, Windows, and macOS.
 
-* **📈 Real-time Telemetry & Speed:**
-  * Live bandwidth charts (Download / Upload) polled in-memory via OpenVPN management socket.
-  * Status badges (Online / Offline / Paused) with active virtual IPs.
-  * Server resource monitoring: CPU, RAM, Disk, and WireGuard exit-node ping.
 
-* **🔀 Split Tunneling (WireGuard + ipset):**
-  * Route selective traffic through a secondary remote exit server (Dual-VPN).
-  * Flexible routing modes: Geo-CIDR lists, custom subnets, or domain-based bypass.
-  * Built-in domain DNS resolver with subnet conflict detection.
+* **⚡ Bidirectional Speed Limiting (`tc` HTB + `ifb0`):**
+* Download & Upload bandwidth shaping with modes: disabled, global, selected clients, or per-client.
+* Quick speed presets (`1`, `5`, `10`, `25`, `50 Mbps`) and automatic `tc` rule recovery if `tun0` restarts.
 
-* **🛡️ Integrated DNS AdBlock (dnsmasq):**
-  * Network-wide ad, tracking, and malware blocking directly on the VPN server.
-  * Support for remote blocklists (AdLists) and custom blacklist/whitelist domain rules.
 
-* **🚫 BitTorrent Filtering:**
-  * Kernel-level iptables packet inspection to drop P2P/BitTorrent traffic and prevent hosting abuse.
+* **📈 1-Second Real-Time Telemetry:**
+* Per-second live speed (`↓ / ↑`), online status, and active session updates directly in client cards and live charts via the OpenVPN management socket.
+* Server resource bar: CPU, RAM, Disk, and WireGuard gateway ping.
 
-* **📦 Backup & Server Configuration:**
-  * One-click full backup and restore (`.tar.gz`) containing OpenVPN PKI, WireGuard, DNS, and database state.
-  * Live in-browser `server.conf` editor with service restart trigger.
-  * Dark and Light theme support.
+
+* **🌐 Domain Analytics & Infographics (Toggleable Modules):**
+* Kernel BPF domain sniffer (SNI / DNS / HTTP) with global & per-client logs, Top-10 domains, and wildcard ignore list (`*.domain.com`).
+* Real client IP connection history.
+* Infographics: Top-10 clients by traffic, status breakdown, and Top-10 visited domains.
+* Every module can be toggled on/off in real time from the settings tab.
+
+
+* **🔀 Split Tunneling (WireGuard + `ipset`):**
+* Dual-VPN selective routing via a remote exit node with automated SSH setup.
+* Flexible modes: Geo-CIDR direct/WG, full tunnel, custom subnets, and per-URL IP resolution with conflict detection.
+
+
+* **🛡️ DNS AdBlock (`dnsmasq`) & Traffic Filtering:**
+* Network-wide ad/tracker blocking with remote AdLists and custom blacklist/whitelist rules.
+* QUIC (UDP/443) blocking for accurate SNI and safe `iptables` BitTorrent filtering.
+
+
+* **📦 Backup, Config & UI:**
+* One-click full backup and restore (`.tar.gz`) covering OpenVPN PKI, WireGuard, `dnsmasq`, SQLite DB, and `.env`.
+* In-browser `server.conf` editor, background task progress bar, Dark/Light themes, and responsive mobile layout.
+
+
 
 ---
 
-<a id="en-install"></a>
+### 🧩 Project Structure
+
+```text
+├── panel.py            # FastAPI app, API routes, authentication & sessions
+├── database.py         # SQLite (WAL), migrations, settings cache & client metadata
+├── openvpn_manager.py  # PKI/Easy-RSA, SpeedMonitor, BPF sniffer, tc + ifb0 shaping
+├── network_manager.py  # WireGuard + ipset, DNS AdBlock (dnsmasq), stats & task tracker
+├── ui_templates.py     # Web UI (HTML/CSS/JS), login page & public landing page
+├── install.sh          # Interactive installer, updater, password reset & backup
+└── requirements.txt    # Python dependencies
+
+```
+
+---
+
 ### 🚀 Quick Install
 
 #### Prerequisites:
+
 * **OS:** Ubuntu 22.04 / 24.04 LTS or Debian 11 / 12
-* **Permissions:** root (sudo)
-* Works on fresh systems as well as existing OpenVPN servers.
+* **Permissions:** root (`sudo`)
+* Works on both fresh servers and existing OpenVPN installations (existing configs and certificates are preserved).
 
 #### Single-command installation:
 
@@ -218,27 +260,28 @@ git clone https://github.com/fsystem88/openvpn-webui.git /opt/openvpn-webui
 cd /opt/openvpn-webui
 chmod +x install.sh
 sudo ./install.sh
+
 ```
 
-The script will:
-1. Detect network configuration (public IP vs. NAT).
-2. Set up OpenVPN (or connect to an existing server).
-3. Initialize Python venv, generate secure secrets, and compute `scrypt` password hashes.
-4. Enable and start the `openvpn-webui.service`.
+The installer will:
+
+1. Install required system packages (`python3`, `iptables`, `ipset`, `iproute2`, `dnsmasq`).
+2. Set up OpenVPN (or safely attach to an existing server).
+3. Create a Python venv, generate session secrets, and store a salted `scrypt` admin password hash.
+4. Enable and start `openvpn-webui.service`.
 
 ---
 
-<a id="en-management"></a>
 ### 🛠️ Management Menu
 
-To reconfigure, reset credentials, or safely uninstall the software, re-run the installation script:
+Re-run the script anytime to update, reset credentials, create a backup, or uninstall:
 
 ```bash
 cd /opt/openvpn-webui
 sudo ./install.sh
+
 ```
 
-An interactive menu will appear:
 ```text
 1) Install / Update Web UI
 2) Reset Web UI Admin Password
@@ -246,31 +289,27 @@ An interactive menu will appear:
 4) Uninstall Web UI only (keep OpenVPN running)
 5) Complete Uninstall (remove OpenVPN and Web UI)
 6) Exit
+
 ```
 
-> **Safety Notice:** An automatic archive is always saved to `/root/openvpn_backup_*.tar.gz` prior to any uninstall action.
+> **Safety Notice:** An automatic backup archive is always saved to `/root/openvpn_backup_*.tar.gz` before updates or uninstall actions.
 
 #### Systemd Service Management:
 
 ```bash
-# Check status
 systemctl status openvpn-webui
-
-# Restart UI service
 systemctl restart openvpn-webui
-
-# View live logs
 journalctl -u openvpn-webui -f
+
 ```
 
 ---
 
-<a id="en-security"></a>
-### 🔒 Security Recommendations
+### 🔒 Security
 
-* **Password Hashing:** Passwords are saved strictly as salted `scrypt` hashes.
-* **Session Integrity:** Cookie signatures utilize HMAC-SHA256 with cryptographically generated 256-bit secrets.
-* **HTTPS Reverse Proxy:** For production deployments, running behind Nginx or Caddy with automated SSL (Let's Encrypt) is highly recommended:
+* **Password Hashing:** Salted `scrypt` hashes.
+* **Session Integrity:** HMAC-SHA256 signed cookies with 256-bit secrets stored in `.env` (`chmod 600`).
+* **HTTPS Reverse Proxy:** Running behind Nginx or Caddy with Let's Encrypt SSL is recommended for production:
 
 ```nginx
 server {
@@ -286,11 +325,11 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
 ```
 
 ---
 
-<a id="en-license"></a>
 ### 📄 License
 
-Distributed under the [MIT](LICENSE) License.
+Distributed under the [MIT](https://www.google.com/search?q=LICENSE) License.
