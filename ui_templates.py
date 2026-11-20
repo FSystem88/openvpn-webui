@@ -897,7 +897,7 @@ MAIN_HTML = r"""
 	</style>
 </head>
 <body>
-<div class="container">
+<div class="container" style="padding-bottom: 20px;">
 	<header class="header">
 		<div class="brand">
 			<div class="brand-text">
