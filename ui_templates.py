@@ -2329,7 +2329,6 @@ async function loadRoutingView() {
 	document.getElementById('routingModeSelect').value = d.routing_mode || 'off';
 	document.getElementById('wgText').textContent = d.wg_up ? t('wg_on') : t('wg_off');
 	document.getElementById('wgText').style.color = d.wg_up ? 'var(--success)' : 'var(--danger)';
-	document.getElementById('torrentBlockCheck').checked = Boolean(d.torrent_block);
 
 	if (d.wg_endpoint) {
 		document.getElementById('remoteEndpointConnected').style.display = 'block';
@@ -2385,7 +2384,7 @@ async function resolveLink() {
 	if (d.success) { pendingLinks.push({ url: d.url || url, ips: d.ips || [], route_via: d.has_conflict ? 'wg' : 'split' }); document.getElementById('splitLinkUrl').value = ''; renderPendingLinks(); }
 }
 async function saveRoutingSettings() {
-	const r = await fetch('/api/routing/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cidr_url: document.getElementById('cidrUrlInput').value.trim(), custom_cidrs: document.getElementById('customCidrsInput').value.trim(), routing_mode: document.getElementById('routingModeSelect').value, torrent_block: document.getElementById('torrentBlockCheck').checked }) });
+	const r = await fetch('/api/routing/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cidr_url: document.getElementById('cidrUrlInput').value.trim(), custom_cidrs: document.getElementById('customCidrsInput').value.trim(), routing_mode: document.getElementById('routingModeSelect').value }) });
 	const d = await r.json();
 	if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
 	else { showToast('❌ ' + (d.message || 'Ошибка запуска WG0'), 'error'); loadRoutingView(); }

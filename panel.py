@@ -1234,9 +1234,9 @@ async def api_routing_settings(request: Request):
         if new_url:
             set_setting("cidr_url", new_url)
         set_setting("custom_cidrs", custom_cidrs)
-        set_setting("torrent_block", "1" if torrent_block else "0")
-
-        await asyncio.to_thread(apply_torrent_block_sync, torrent_block)
+        if "torrent_block" in data:
+            set_setting("torrent_block", "1" if torrent_block else "0")
+            await asyncio.to_thread(apply_torrent_block_sync, torrent_block)
 
         if new_mode in ["off", "split", "all", "cidr_wg"]:
             set_setting("routing_mode", new_mode)
