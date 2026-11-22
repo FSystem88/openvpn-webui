@@ -150,14 +150,23 @@ uninstall_full() {
 	systemctl stop wg-quick@wg0 2>/dev/null || true
 	systemctl disable wg-quick@wg0 2>/dev/null || true
 
+	systemctl stop wg-ipset.service openvpn-iptables.service 2>/dev/null || true
+	systemctl disable wg-ipset.service openvpn-iptables.service 2>/dev/null || true
+	rm -f /etc/systemd/system/wg-ipset.service /etc/systemd/system/openvpn-iptables.service
+
 	systemctl daemon-reload
 
 	echo "[*] Удаление конфигураций и баз данных..."
 	tc qdisc del dev tun0 root 2>/dev/null || true
 	tc qdisc del dev tun0 ingress 2>/dev/null || true
 	tc qdisc del dev ifb0 root 2>/dev/null || true
+	ip link del dev ifb0 2>/dev/null || true
+	ipset destroy ru_ips 2>/dev/null || true
+	ipset destroy force_wg_ips 2>/dev/null || true
+	ipset destroy force_direct_ips 2>/dev/null || true
 	rm -rf /etc/openvpn
 	rm -rf /etc/wireguard
+	rm -rf /var/cache/ovpn_adblock
 	rm -f /etc/dnsmasq.d/00-ovpn-base.conf
 	rm -f /etc/dnsmasq.d/99-ovpn-adblock.conf
 	rm -rf /var/run/openvpn-server
