@@ -1133,14 +1133,6 @@ MAIN_HTML = r"""
 						</div>
 					</div>
 
-					<div class="switch-row">
-						<div class="switch-info">
-							<strong>🚫 Блокировка BitTorrent</strong>
-							<span>Защита от абузов и банов хостинга</span>
-						</div>
-						<label class="toggle-switch"><input type="checkbox" id="torrentBlockCheck"><span class="toggle-slider"></span></label>
-					</div>
-
 					<div class="form-group"><label class="form-label">URL списка подсетей:</label><input type="text" id="cidrUrlInput" class="search-input"></div>
 					<div class="form-group"><label class="form-label">Свои IP/подсети:</label><textarea id="customCidrsInput" class="textarea-input" rows="3" placeholder="77.88.8.8/32&#10;192.168.10.0/24"></textarea></div>
 					<div class="form-group">

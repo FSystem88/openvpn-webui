@@ -445,9 +445,10 @@ fi
 # Исключение помеченного трафика (mark 0x1) из SNAT в openvpn-iptables.service
 if [[ -f /etc/systemd/system/openvpn-iptables.service ]] && ! grep -q -- "-m mark ! --mark 0x1" /etc/systemd/system/openvpn-iptables.service; then
 	echo "[*] Обновление правил SNAT в openvpn-iptables.service..."
+	systemctl stop openvpn-iptables.service 2>/dev/null || true
 	sed -i 's/-j SNAT/-m mark ! --mark 0x1 -j SNAT/g' /etc/systemd/system/openvpn-iptables.service
 	systemctl daemon-reload
-	systemctl restart openvpn-iptables.service 2>/dev/null || true
+	systemctl start openvpn-iptables.service 2>/dev/null || true
 fi
 
 # Служба восстановления ipset перед запуском wg-quick@wg0
