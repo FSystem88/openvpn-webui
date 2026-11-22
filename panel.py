@@ -1240,7 +1240,9 @@ async def api_routing_settings(request: Request):
 
         if new_mode in ["off", "split", "all", "cidr_wg"]:
             set_setting("routing_mode", new_mode)
-            await asyncio.to_thread(apply_routing_mode_sync, new_mode)
+            ok, msg = await asyncio.to_thread(apply_routing_mode_sync, new_mode)
+            if not ok:
+                return {"success": False, "message": msg}
 
         return {"success": True}
     except Exception as e:

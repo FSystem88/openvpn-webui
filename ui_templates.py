@@ -2394,7 +2394,9 @@ async function resolveLink() {
 }
 async function saveRoutingSettings() {
 	const r = await fetch('/api/routing/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cidr_url: document.getElementById('cidrUrlInput').value.trim(), custom_cidrs: document.getElementById('customCidrsInput').value.trim(), routing_mode: document.getElementById('routingModeSelect').value, torrent_block: document.getElementById('torrentBlockCheck').checked }) });
-	const d = await r.json(); if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
+	const d = await r.json();
+	if (d.success) { showToast('✅ Настройки сохранены'); loadRoutingView(); }
+	else { showToast('❌ ' + (d.message || 'Ошибка запуска WG0'), 'error'); loadRoutingView(); }
 }
 async function updateCidrIps() {
 	const r = await fetch('/api/routing/update_ips', { method: 'POST' }); const d = await r.json();
@@ -2404,7 +2406,7 @@ async function setupRemoteTunnel() {
 	const remote_ip = document.getElementById('remoteServerIp').value.trim(); const remote_pass = document.getElementById('remoteServerPass').value;
 	if (!remote_ip || !remote_pass) return showToast('❌ Укажите IP и пароль', 'error');
 	const r = await fetch('/api/routing/setup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ remote_ip, remote_pass }) });
-	const d = await r.json(); if (d.async && d.task_id) watchBackgroundTask(d.task_id, ok => { if (ok) { showToast('✅ Туннель настроен'); loadRoutingView(); } });
+	const d = await r.json(); if (d.async && d.task_id) watchBackgroundTask(d.task_id, (ok, msg) => { if (ok) { showToast('✅ Туннель настроен'); loadRoutingView(); } else { showToast('❌ ' + (msg || 'Ошибка настройки туннеля'), 'error'); loadRoutingView(); } });
 }
 
 async function loadAdblockStatus() {

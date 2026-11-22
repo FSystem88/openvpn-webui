@@ -547,22 +547,22 @@ def reload_ipset_sync() -> None:
     _apply_set("force_direct_ips", force_direct_nets, 65536)
 
 
-def apply_routing_mode_sync(mode: str) -> None:
+def apply_routing_mode_sync(mode: str) -> Tuple[bool, str]:
     wg_conf_path = Path("/etc/wireguard/wg0.conf")
     if mode == "off":
         subprocess.run(["systemctl", "stop", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["systemctl", "disable", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return
+        return True, "OK"
 
     if not wg_conf_path.exists():
-        return
+        return False, "Файл /etc/wireguard/wg0.conf не найден"
 
     conf = wg_conf_path.read_text(encoding="utf-8", errors="ignore")
     ru_priv_m = re.search(r"PrivateKey\s*=\s*(.+)", conf)
     remote_pub_m = re.search(r"PublicKey\s*=\s*(.+)", conf)
     endpoint_m = re.search(r"Endpoint\s*=\s*(.+)", conf)
     if not (ru_priv_m and remote_pub_m and endpoint_m):
-        return
+        return False, "Некорректный формат /etc/wireguard/wg0.conf"
 
     subprocess.run(["systemctl", "stop", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     reload_ipset_sync()
@@ -573,22 +573,24 @@ def apply_routing_mode_sync(mode: str) -> None:
         f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set force_wg_ips dst -j MARK --set-mark 0x1",
         f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set force_wg_ips dst -j ACCEPT",
     ]
-    priority_rules_del = [r.replace("-A PREROUTING", "-D PREROUTING") for r in priority_rules]
+    priority_rules_del = [r.replace("-A PREROUTING", "-D PREROUTING") + " 2>/dev/null || true" for r in priority_rules]
 
     if mode == "all":
         base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"]
-        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -j MARK --set-mark 0x1 2>/dev/null || true"]
     elif mode == "cidr_wg":
         base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"]
-        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set --match-set ru_ips dst -j MARK --set-mark 0x1 2>/dev/null || true"]
     else:
         base_rules = [f"iptables -t mangle -A PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"]
-        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1"]
+        base_rules_del = [f"iptables -t mangle -D PREROUTING -s {subnet_cidr} -m set ! --match-set ru_ips dst -j MARK --set-mark 0x1 2>/dev/null || true"]
 
     all_mangle_up = "\n".join(f"PostUp = {r}" for r in (priority_rules + base_rules))
     all_mangle_down = "\n".join(f"PostDown = {r}" for r in (priority_rules_del + base_rules_del))
     mss_up = "iptables -t mangle -I FORWARD 1 -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
-    mss_down = "iptables -t mangle -D FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu"
+    mss_down = "iptables -t mangle -D FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true"
+    nat_up = f"iptables -t nat -C POSTROUTING -s {subnet_cidr} -o wg0 -j MASQUERADE 2>/dev/null || iptables -t nat -A POSTROUTING -s {subnet_cidr} -o wg0 -j MASQUERADE"
+    nat_down = f"iptables -t nat -D POSTROUTING -s {subnet_cidr} -o wg0 -j MASQUERADE 2>/dev/null || true"
 
     ru_conf = f"""[Interface]
 Address = 10.200.0.1/30
@@ -596,15 +598,18 @@ PrivateKey = {ru_priv_m.group(1).strip()}
 MTU = 1360
 Table = off
 
-PostUp = ip route add default dev wg0 table 100
+PostUp = ip route replace default dev wg0 table 100
 {all_mangle_up}
 PostUp = {mss_up}
+PostUp = {nat_up}
+PostUp = ip rule del fwmark 0x1 table 100 priority 100 2>/dev/null || true
 PostUp = ip rule add fwmark 0x1 table 100 priority 100
 
-PostDown = ip rule del fwmark 0x1 table 100 priority 100
+PostDown = ip rule del fwmark 0x1 table 100 priority 100 2>/dev/null || true
+PostDown = {nat_down}
 PostDown = {mss_down}
 {all_mangle_down}
-PostDown = ip route del default dev wg0 table 100
+PostDown = ip route del default dev wg0 table 100 2>/dev/null || true
 
 [Peer]
 PublicKey = {remote_pub_m.group(1).strip()}
@@ -615,7 +620,11 @@ PersistentKeepalive = 25
     wg_conf_path.write_text(ru_conf, encoding="utf-8")
     os.chmod(wg_conf_path, 0o600)
     subprocess.run(["systemctl", "enable", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(["systemctl", "start", "wg-quick@wg0"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    res = subprocess.run(["systemctl", "start", "wg-quick@wg0"], capture_output=True, text=True)
+    if res.returncode != 0:
+        err = (res.stderr or res.stdout or "Ошибка запуска wg-quick@wg0").strip()
+        return False, err
+    return True, "OK"
 
 
 def setup_remote_tunnel_sync(
@@ -676,15 +685,21 @@ MTU = 1360
 
 PostUp = iptables -I INPUT 1 -i wg0 -s 10.200.0.0/30 -j ACCEPT
 PostUp = iptables -I FORWARD 1 -i wg0 -s {subnet_cidr} -o {ext_iface} -j ACCEPT
+PostUp = iptables -I FORWARD 1 -i wg0 -s 10.200.0.1/32 -o {ext_iface} -j ACCEPT
 PostUp = iptables -I FORWARD 1 -i {ext_iface} -o wg0 -d {subnet_cidr} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+PostUp = iptables -I FORWARD 1 -i {ext_iface} -o wg0 -d 10.200.0.1/32 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 PostUp = iptables -t nat -I POSTROUTING 1 -s {subnet_cidr} -o {ext_iface} -j MASQUERADE
+PostUp = iptables -t nat -I POSTROUTING 1 -s 10.200.0.1/32 -o {ext_iface} -j MASQUERADE
 PostUp = iptables -t mangle -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1320
 
-PostDown = iptables -D INPUT -i wg0 -s 10.200.0.0/30 -j ACCEPT
-PostDown = iptables -D FORWARD -i wg0 -s {subnet_cidr} -o {ext_iface} -j ACCEPT
-PostDown = iptables -D FORWARD -i {ext_iface} -o wg0 -d {subnet_cidr} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-PostDown = iptables -t nat -D POSTROUTING -s {subnet_cidr} -o {ext_iface} -j MASQUERADE
-PostDown = iptables -t mangle -D FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1320
+PostDown = iptables -D INPUT -i wg0 -s 10.200.0.0/30 -j ACCEPT 2>/dev/null || true
+PostDown = iptables -D FORWARD -i wg0 -s {subnet_cidr} -o {ext_iface} -j ACCEPT 2>/dev/null || true
+PostDown = iptables -D FORWARD -i wg0 -s 10.200.0.1/32 -o {ext_iface} -j ACCEPT 2>/dev/null || true
+PostDown = iptables -D FORWARD -i {ext_iface} -o wg0 -d {subnet_cidr} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+PostDown = iptables -D FORWARD -i {ext_iface} -o wg0 -d 10.200.0.1/32 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+PostDown = iptables -t nat -D POSTROUTING -s {subnet_cidr} -o {ext_iface} -j MASQUERADE 2>/dev/null || true
+PostDown = iptables -t nat -D POSTROUTING -s 10.200.0.1/32 -o {ext_iface} -j MASQUERADE 2>/dev/null || true
+PostDown = iptables -t mangle -D FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1320 2>/dev/null || true
 
 [Peer]
 PublicKey = {ru_pub}
@@ -719,7 +734,9 @@ PersistentKeepalive = 25
 
         mode = get_setting("routing_mode") or "split"
         set_setting("routing_mode", mode)
-        apply_routing_mode_sync(mode)
+        ok, msg = apply_routing_mode_sync(mode)
+        if not ok:
+            return False, f"Туннель настроен, но wg0 не запустился: {msg}"
 
         if on_progress:
             on_progress(100, "Туннель развёрнут")

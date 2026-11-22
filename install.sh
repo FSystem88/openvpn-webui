@@ -246,7 +246,7 @@ fi
 echo "[*] Обновление пакетов и установка системных зависимостей..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-	python3 python3-pip python3-venv iptables ipset iproute2 curl wget tar dnsmasq openssl
+	python3 python3-pip python3-venv iptables ipset iproute2 curl wget tar dnsmasq openssl wireguard
 
 SERVER_IP=$(curl -s4 https://api.ipify.org || curl -s4 https://ifconfig.me || ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
 
@@ -432,6 +432,43 @@ sync_db_credentials "$ADMIN_LOGIN" "$ADMIN_PASSWORD_HASH" "$OVPN_DOMAIN" "$OVPN_
 if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
 	ufw allow "$PANEL_PORT"/tcp >/dev/null 2>&1 || true
 fi
+
+# Настройка AppArmor для wg-quick (если профиль существует)
+if [[ -f /etc/apparmor.d/wg-quick ]]; then
+	echo "[*] Настройка профиля AppArmor для wg-quick..."
+	if ! grep -q "capability net_raw," /etc/apparmor.d/wg-quick; then
+		sed -i '/^}/i \  capability net_raw,\n  \/run\/xtables.lock rwkl,\n  \/run\/ rw,' /etc/apparmor.d/wg-quick
+		apparmor_parser -r /etc/apparmor.d/wg-quick 2>/dev/null || true
+	fi
+fi
+
+# Исключение помеченного трафика (mark 0x1) из SNAT в openvpn-iptables.service
+if [[ -f /etc/systemd/system/openvpn-iptables.service ]] && ! grep -q -- "-m mark ! --mark 0x1" /etc/systemd/system/openvpn-iptables.service; then
+	echo "[*] Обновление правил SNAT в openvpn-iptables.service..."
+	sed -i 's/-j SNAT/-m mark ! --mark 0x1 -j SNAT/g' /etc/systemd/system/openvpn-iptables.service
+	systemctl daemon-reload
+	systemctl restart openvpn-iptables.service 2>/dev/null || true
+fi
+
+# Служба восстановления ipset перед запуском wg-quick@wg0
+echo "[*] Регистрация службы wg-ipset..."
+cat <<EOF > /etc/systemd/system/wg-ipset.service
+[Unit]
+Description=Restore ipset sets before WireGuard
+Before=wg-quick@wg0.service
+After=network-pre.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=$REPO_DIR
+ExecStart=$REPO_DIR/venv/bin/python3 -c "from network_manager import reload_ipset_sync; reload_ipset_sync()"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable wg-ipset.service 2>/dev/null || true
 
 # Настройка службы systemd
 echo "[*] Регистрация службы openvpn-webui..."

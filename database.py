@@ -5,6 +5,7 @@ import os
 import secrets
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,7 +42,8 @@ DNSMASQ_ADBLOCK_CONF = Path("/etc/dnsmasq.d/99-ovpn-adblock.conf")
 _settings_cache: Dict[str, str] = {}
 
 
-def get_db() -> sqlite3.Connection:
+@contextmanager
+def get_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=15.0)
     conn.row_factory = sqlite3.Row
@@ -49,7 +51,14 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA synchronous=NORMAL;")
     conn.execute("PRAGMA temp_store=MEMORY;")
     conn.execute("PRAGMA cache_size=-4000;")
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def _ensure_column(
