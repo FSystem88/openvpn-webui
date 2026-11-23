@@ -8,14 +8,14 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
-[**🇷🇺 Читать на русском**](#-русский) • [**🇬🇧 Read in English**](#-english)
+[**Читать на русском**](#ru) • [**Read in English**](#en)
 
 ---
 
 </div>
 
 <a id="ru"></a>
-# 🇷🇺 Русский
+# Русский
 
 <div align="center">
 
@@ -82,6 +82,7 @@
 
 ---
 
+<a id="ru-install"></a>
 ### 🚀 Быстрая установка
 
 #### Требования к системе:
@@ -109,6 +110,7 @@ sudo ./install.sh
 
 ---
 
+<a id="ru-management"></a>
 ### 🛠️ Меню управления
 
 Для обновления, сброса пароля, бэкапа или удаления запустите скрипт повторно:
@@ -142,6 +144,7 @@ journalctl -u openvpn-webui -f
 
 ---
 
+<a id="ru-security"></a>
 ### 🔒 Безопасность
 
 * **Пароли:** хранятся в виде солёного `scrypt`-хэша.
@@ -167,6 +170,7 @@ server {
 
 ---
 
+<a id="ru-license"></a>
 ### 📄 Лицензия
 
 Проект распространяется под лицензией [MIT](LICENSE).
@@ -175,9 +179,10 @@ server {
 
 ---
 
-# 🇬🇧 English
+<a id="en"></a>
+# English
 
-| 📌 [Features](#-features) | 🧩 [Architecture](#-project-structure) | 🚀 [Install](#-quick-install) | 🛠️ [Management](#-management-menu) | 🔒 [Security](#-security) | 📄 [License](#-license) |
+| 📌 [Features](#en-features) | 🧩 [Architecture](#en-arch) | 🚀 [Install](#en-install) | 🛠️ [Management](#en-management) | 🔒 [Security](#en-security) | 📄 [License](#en-license) |
 | --- | --- | --- | --- | --- | --- |
 
 
