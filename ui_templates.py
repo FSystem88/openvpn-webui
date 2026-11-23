@@ -1514,7 +1514,7 @@ const RU_TO_EN = {
 const PLACEHOLDER_EN = {
 	"🔍 Поиск по имени или IP...": "🔍 Search by name or IP...",
 	"🔍 Поиск по домену или клиенту...": "🔍 Search by domain or client...",
-	"Например: 5120": "e.g. 5120",
+	"Например: 2": "e.g. 2",
 	"IP удаленного сервера": "Remote server IP",
 	"Пароль root": "Root password",
 	"Например: Ноутбук шефа": "e.g. Boss laptop",
@@ -1535,7 +1535,9 @@ const I18N_DYN = {
 		remote_conn: "🟢 Подключено", remote_inact: "🟢 Не активно", remote_none: "⚪ Не настроено",
 		direct: "🟡 Напрямую", via_wg: "🟣 Через WG",
 		no_records: "Записей нет", no_lists: "Списков нет", no_domains: "Доменов нет",
-		adb_status: "Статус:", adb_on: "🟢 АКТИВЕН", adb_off: "⚪ ОТКЛЮЧЕН", adb_rules: "Правил:"
+		adb_status: "Статус:", adb_on: "🟢 АКТИВЕН", adb_off: "⚪ ОТКЛЮЧЕН", adb_rules: "Правил:",
+		all_clients: "👥 Все клиенты", hide: "🚫 Скрыть", no_ignored: "Исключений нет",
+		records_cnt: "Записей:", sites_prefix: "🌐 Сайты:", login_in: "Вход:", login_out: "Выход:"
 	},
 	en: {
 		online: "🟢 Online", offline: "⚪ Offline", paused: "⏸️ PAUSED", valid: "VALID", revoked: "REVOKED",
@@ -1549,7 +1551,9 @@ const I18N_DYN = {
 		remote_conn: "🟢 Connected", remote_inact: "🟢 Inactive", remote_none: "⚪ Not configured",
 		direct: "🟡 Direct", via_wg: "🟣 Via WG",
 		no_records: "No records", no_lists: "No lists", no_domains: "No domains",
-		adb_status: "Status:", adb_on: "🟢 ACTIVE", adb_off: "⚪ DISABLED", adb_rules: "Rules:"
+		adb_status: "Status:", adb_on: "🟢 ACTIVE", adb_off: "⚪ DISABLED", adb_rules: "Rules:",
+		all_clients: "👥 All Clients", hide: "🚫 Hide", no_ignored: "No ignored domains",
+		records_cnt: "Records:", sites_prefix: "🌐 Sites:", login_in: "In:", login_out: "Out:"
 	}
 };
 
@@ -2035,7 +2039,7 @@ function syncChartUserDropdown() {
 	allClientsList.forEach(c => { if (c.status === 'valid') namesSet.add(c.name); });
 	Object.keys(latestLiveSpeeds).forEach(name => namesSet.add(name));
 	const sortedNames = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
-	let html = `<option value="__ALL__">👥 Все клиенты</option>`;
+	let html = `<option value="__ALL__">${t('all_clients')}</option>`;
 	sortedNames.forEach(name => { html += `<option value="${name}"${name === currentVal ? ' selected' : ''}>${latestLiveSpeeds[name] ? '🟢 ' : ''}${name}</option>`; });
 	sel.innerHTML = html;
 	sel.value = namesSet.has(currentVal) ? currentVal : '__ALL__';
@@ -2210,10 +2214,10 @@ async function fetchTabGlobalDomains() {
 			</div>
 			<div class="domain-row-meta">
 				<span class="domain-time">${item.time_fmt}</span>
-				<button class="btn btn-sm btn-danger" style="padding:3px 8px; font-size:11px;" onclick="hideDomainFromSniffer('${item.domain}')">🚫 Скрыть</button>
+				<button class="btn btn-sm btn-danger" style="padding:3px 8px; font-size:11px;" onclick="hideDomainFromSniffer('${item.domain}')">${t('hide')}</button>
 			</div>
 		</div>
-	`).join('') || `<div style="text-align:center; padding:40px; color:var(--text-muted);">Записей не найдено</div>`;
+	`).join('') || `<div style="text-align:center; padding:40px; color:var(--text-muted);">${t('no_records')}</div>`;
 }
 async function hideDomainFromSniffer(domain) {
 	if (!confirm(`Исключить домен "${domain}" и поддомены?`)) return;
@@ -2225,7 +2229,7 @@ function openIgnoredDomainsModal() { document.getElementById('ignoredDomainsModa
 async function loadIgnoredDomainsList() {
 	const r = await fetch('/api/sniffer/ignored'); const d = await r.json(); const list = d.ignored || [];
 	document.getElementById('ignoredDomainsCountBadge').textContent = list.length;
-	document.getElementById('ignoredDomainsListBox').innerHTML = list.map(item => `<div class="domain-row"><span class="domain-name" style="color:var(--danger);">${item.domain}</span><button class="btn btn-sm btn-danger" onclick="deleteIgnoredDomain(${item.id})">🗑️ Восстановить</button></div>`).join('') || '<div style="padding:20px; text-align:center; color:var(--text-muted);">Исключений нет</div>';
+	document.getElementById('ignoredDomainsListBox').innerHTML = list.map(item => `<div class="domain-row"><span class="domain-name" style="color:var(--danger);">${item.domain}</span><button class="btn btn-sm btn-danger" onclick="deleteIgnoredDomain(${item.id})">${t('restore')}</button></div>`).join('') || `<div style="padding:20px; text-align:center; color:var(--text-muted);">${t('no_ignored')}</div>`;
 }
 async function addManualIgnoredDomain() {
 	const input = document.getElementById('newIgnoredDomainInput'); const domain = input.value.trim(); if (!domain) return;
@@ -2236,7 +2240,7 @@ async function deleteIgnoredDomain(id) { await fetch(`/api/sniffer/ignored/${id}
 
 function openDomainsModal(name) {
 	currentDomainsClient = name;
-	document.getElementById('domainsModalTitle').textContent = `🌐 Сайты: ${name}`;
+	document.getElementById('domainsModalTitle').textContent = `${t('sites_prefix')} ${name}`;
 	document.getElementById('domainSearchInput').value = '';
 	switchDomainTab('history');
 	document.getElementById('domainsModal').classList.add('active');
@@ -2255,20 +2259,20 @@ async function fetchClientDomains() {
 	const q = document.getElementById('domainSearchInput').value.trim();
 	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/domains?q=${encodeURIComponent(q)}`);
 	const d = await r.json(); const list = d.domains || [];
-	document.getElementById('domainsCountBadge').textContent = `Записей: ${list.length}`;
-	document.getElementById('domainsListBox').innerHTML = list.map(i => `<div class="domain-row"><span class="domain-name">${i.domain} ${i.count > 1 ? '(×' + i.count + ')' : ''}</span><span class="domain-time">${i.time_fmt}</span></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+	document.getElementById('domainsCountBadge').textContent = `${t('records_cnt')} ${list.length}`;
+	document.getElementById('domainsListBox').innerHTML = list.map(i => `<div class="domain-row"><span class="domain-name">${i.domain} ${i.count > 1 ? '(×' + i.count + ')' : ''}</span><span class="domain-time">${i.time_fmt}</span></div>`).join('') || `<div style="padding:30px; text-align:center; color:var(--text-muted);">${t('no_records')}</div>`;
 }
 async function fetchClientTopDomains() {
 	if (!currentDomainsClient) return;
 	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/domains`);
 	const d = await r.json(); const list = d.top_domains || [];
-	document.getElementById('domainsTopBox').innerHTML = list.map((i, idx) => `<div class="domain-row"><span class="domain-name">#${idx+1} ${i.domain}</span><strong>${i.count} req</strong></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+	document.getElementById('domainsTopBox').innerHTML = list.map((i, idx) => `<div class="domain-row"><span class="domain-name">#${idx+1} ${i.domain}</span><strong>${i.count} req</strong></div>`).join('') || `<div style="padding:30px; text-align:center; color:var(--text-muted);">${t('no_records')}</div>`;
 }
 async function fetchClientIps() {
 	if (!currentDomainsClient) return;
 	const r = await fetch(`/api/clients/${encodeURIComponent(currentDomainsClient)}/ips`);
 	const d = await r.json(); const list = d.ips || [];
-	document.getElementById('ipsListBox').innerHTML = list.map(i => `<div class="domain-row" style="flex-direction:column; align-items:stretch;"><div><strong style="color:#34d399;">${i.real_ip}</strong> (TUN: ${i.virt_ip})</div><div style="font-size:11px; color:var(--text-muted);">Вход: ${i.connected_fmt} | Выход: ${i.disconnected_fmt}</div></div>`).join('') || '<div style="padding:30px; text-align:center; color:var(--text-muted);">Записей нет</div>';
+	document.getElementById('ipsListBox').innerHTML = list.map(i => `<div class="domain-row" style="flex-direction:column; align-items:stretch;"><div><strong style="color:#34d399;">${i.real_ip}</strong> (TUN: ${i.virt_ip})</div><div style="font-size:11px; color:var(--text-muted);">${t('login_in')} ${i.connected_fmt} | ${t('login_out')} ${i.disconnected_fmt}</div></div>`).join('') || `<div style="padding:30px; text-align:center; color:var(--text-muted);">${t('no_records')}</div>`;
 }
 async function clearClientDomains() {
 	if (!currentDomainsClient || !confirm(`Очистить историю для ${currentDomainsClient}?`)) return;
