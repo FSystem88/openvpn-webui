@@ -190,6 +190,7 @@ server {
 
 ---
 
+<a id="en-features"></a>
 ### ✨ Features
 
 * **👥 Client Management (Easy-RSA PKI):**
@@ -235,6 +236,7 @@ server {
 
 ---
 
+<a id="en-arch"></a>
 ### 🧩 Project Structure
 
 ```text
@@ -250,6 +252,7 @@ server {
 
 ---
 
+<a id="en-install"></a>
 ### 🚀 Quick Install
 
 #### Prerequisites:
@@ -277,6 +280,7 @@ The installer will:
 
 ---
 
+<a id="en-management"></a>
 ### 🛠️ Management Menu
 
 Re-run the script anytime to update, reset credentials, create a backup, or uninstall:
@@ -310,6 +314,7 @@ journalctl -u openvpn-webui -f
 
 ---
 
+<a id="en-security"></a>
 ### 🔒 Security
 
 * **Password Hashing:** Salted `scrypt` hashes.
@@ -335,6 +340,7 @@ server {
 
 ---
 
+<a id="en-license"></a>
 ### 📄 License
 
 Distributed under the [MIT](LICENSE) License.
