@@ -11,8 +11,30 @@
 [**Читать на русском**](#ru) • [**Read in English**](#en)
 
 ---
-
+<div align="center">
+  <img src="assets/clients.png" alt="OpenVPN Web UI Dashboard" width="100%">
 </div>
+
+<details>
+<summary><b>📸 Посмотреть все скриншоты / View all screenshots (6)</b></summary>
+<br>
+
+| 📈 Скорость / Speed | 🌐 Сайты / Sites |
+| :---: | :---: |
+| ![Speed](assets/speed.png) | ![Sites](assets/sites.png) |
+
+| 📊 Инфографика / Infographics | ⚡ Лимиты / Limits |
+| :---: | :---: |
+| ![Infographics](assets/infographics.png) | ![Limits](assets/limits.png) |
+
+| 🔀 Маршрутизация / Routing & AdBlock | 🔐 Настройки / Account & Modules |
+| :---: | :---: |
+| ![Routing](assets/routing.png) | ![Settings](assets/settings.png) |
+
+</details>
+</div>
+
+---
 
 <a id="ru"></a>
 # Русский
